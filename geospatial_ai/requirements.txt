@@ -1,0 +1,7 @@
+earthengine-api>=0.1.380
+google-genai>=0.1.1
+requests>=2.31.0
+pydantic>=2.5.0
+shapely>=2.0.0
+geopandas>=0.14.0
+python-dotenv>=1.0.0
