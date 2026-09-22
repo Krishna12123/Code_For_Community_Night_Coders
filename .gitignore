@@ -49,3 +49,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Geospatial AI Outputs
+geospatial_ai/output/
