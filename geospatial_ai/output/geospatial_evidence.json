@@ -1,0 +1,30 @@
+{
+  "analysis_region": {
+    "bbox": [
+      80.1,
+      12.5,
+      84.1,
+      16.5
+    ],
+    "date": "2026-09-22T17:54:41.300967+00:00"
+  },
+  "rainfall": {
+    "dataset": "NASA/GPM_L3/IMERG_V07",
+    "status": "available",
+    "start_date": "2026-09-20",
+    "end_date": "2026-09-22",
+    "accumulation_mm": 85.5,
+    "tile_url": "https://mock-tile-server.local/gpm_rainfall/{z}/{x}/{y}.png",
+    "reason": "Offline test mode"
+  },
+  "flood": {
+    "dataset": "COPERNICUS/S1_GRD",
+    "status": "available",
+    "start_date": "2026-09-20",
+    "end_date": "2026-09-22",
+    "accumulation_mm": null,
+    "tile_url": "https://mock-tile-server.local/sar_flood/{z}/{x}/{y}.png",
+    "reason": "Offline test mode"
+  },
+  "generated_at": "2026-09-22T17:54:43.089348Z"
+}

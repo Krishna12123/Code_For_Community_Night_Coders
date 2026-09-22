@@ -1,0 +1,76 @@
+{
+  "cyclone_id": "CYC-2026-01",
+  "name": "Cyclone Vardah-II",
+  "source": "synthetic_fixture",
+  "category": 3,
+  "max_sustained_wind_kmh": 165.0,
+  "central_pressure_mb": 960.0,
+  "current_position": {
+    "lat": 14.5,
+    "lon": 82.1,
+    "recorded_at": "2026-09-22T17:54:41.300967Z",
+    "wind_kmh": 165.0,
+    "uncertainty_radius_km": null
+  },
+  "past_track": [
+    {
+      "lat": 12.8,
+      "lon": 85.2,
+      "recorded_at": "2026-09-21T23:54:41.300967Z",
+      "wind_kmh": 110.0,
+      "uncertainty_radius_km": null
+    },
+    {
+      "lat": 13.4,
+      "lon": 84.1,
+      "recorded_at": "2026-09-22T05:54:41.300967Z",
+      "wind_kmh": 135.0,
+      "uncertainty_radius_km": null
+    },
+    {
+      "lat": 14.0,
+      "lon": 83.0,
+      "recorded_at": "2026-09-22T11:54:41.300967Z",
+      "wind_kmh": 150.0,
+      "uncertainty_radius_km": null
+    },
+    {
+      "lat": 14.5,
+      "lon": 82.1,
+      "recorded_at": "2026-09-22T17:54:41.300967Z",
+      "wind_kmh": 165.0,
+      "uncertainty_radius_km": null
+    }
+  ],
+  "forecast_track": [
+    {
+      "lat": 15.0,
+      "lon": 81.3,
+      "recorded_at": "2026-09-22T23:54:41.300967Z",
+      "wind_kmh": 175.0,
+      "uncertainty_radius_km": 35.0
+    },
+    {
+      "lat": 15.6,
+      "lon": 80.5,
+      "recorded_at": "2026-09-23T05:54:41.300967Z",
+      "wind_kmh": 180.0,
+      "uncertainty_radius_km": 50.0
+    },
+    {
+      "lat": 16.1,
+      "lon": 79.8,
+      "recorded_at": "2026-09-23T11:54:41.300967Z",
+      "wind_kmh": 150.0,
+      "uncertainty_radius_km": 70.0
+    },
+    {
+      "lat": 16.7,
+      "lon": 79.1,
+      "recorded_at": "2026-09-23T17:54:41.300967Z",
+      "wind_kmh": 95.0,
+      "uncertainty_radius_km": 90.0
+    }
+  ],
+  "metadata": {}
+}

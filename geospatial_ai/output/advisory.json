@@ -1,0 +1,31 @@
+{
+  "executive_summary": "Severe Cyclonic Storm 'Cyclone Vardah-II' is packing sustained winds of 165.0 km/h with central pressure 960.0 mb. Projected landfall along coastal Andhra Pradesh within 18 hours. This is a simulated demo scenario based on historical analogs.",
+  "threat_level": "RED",
+  "high_risk_districts": [
+    "Nellore",
+    "Prakasam",
+    "Bapatla"
+  ],
+  "critical_actions": [
+    {
+      "priority": "HIGH",
+      "phase": "PRE_LANDFALL",
+      "sector": "Evacuation",
+      "instruction": "Advise evacuation of all habitations within 5km from coastline."
+    },
+    {
+      "priority": "HIGH",
+      "phase": "PRE_LANDFALL",
+      "sector": "Medical",
+      "instruction": "Deploy mobile power generators and blood reserves to district hospitals."
+    }
+  ],
+  "evidence_used": [
+    "Simulated cyclone track",
+    "Mock GPM accumulation"
+  ],
+  "limitations": [
+    "This is a demo fixture. No real-time ground truth is available."
+  ],
+  "mode": "demo_fixture"
+}
