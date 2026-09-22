@@ -19,12 +19,13 @@ def test_gee_pipeline_offline_evidence():
     
     # Check flood
     assert evidence.flood.dataset == "COPERNICUS/S1_GRD"
-    assert evidence.flood.status == "available"
-    assert evidence.flood.reason == "Offline test mode"
-    assert "mock-tile-server" in evidence.flood.tile_url
+    assert evidence.flood.status == "unavailable"
+    assert evidence.flood.reason == "offline"
+    assert evidence.flood.tile_url is None
     
     # Check rainfall
     assert evidence.rainfall.dataset == "NASA/GPM_L3/IMERG_V07"
-    assert evidence.rainfall.status == "available"
-    assert evidence.rainfall.reason == "Offline test mode"
-    assert "mock-tile-server" in evidence.rainfall.tile_url
+    assert evidence.rainfall.status == "unavailable"
+    assert evidence.rainfall.reason == "offline"
+    assert evidence.rainfall.tile_url is None
+    assert evidence.rainfall.accumulation_mm is None

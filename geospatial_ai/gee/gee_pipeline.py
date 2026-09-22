@@ -40,7 +40,8 @@ class GEEPipeline:
 
     def get_sar_flood_layer(self, bbox: list, start_date: str, end_date: str) -> LayerInfo:
         """
-        Calculates Sentinel-1 SAR GRD water change detection.
+        Sentinel-1 SAR mosaic and VV backscatter threshold heuristic (Day 1).
+        Genuine before/after change detection will be implemented in Day 2.
         """
         if self.initialized and not self.offline_mode:
             try:
@@ -74,16 +75,17 @@ class GEEPipeline:
         # Mock/Offline response
         return LayerInfo(
             dataset="COPERNICUS/S1_GRD",
-            status="available",
+            status="unavailable",
             start_date=start_date,
             end_date=end_date,
-            tile_url="https://mock-tile-server.local/sar_flood/{z}/{x}/{y}.png",
-            reason="Offline test mode"
+            tile_url=None,
+            reason="offline"
         )
 
     def get_gpm_rainfall_layer(self, bbox: list, start_date: str, end_date: str) -> LayerInfo:
         """
-        Generates NASA GPM IMERG precipitation accumulation.
+        Generates NASA GPM IMERG precipitation accumulation layer.
+        (Accumulation metric calculation deferred to Day 2 using ee.Reducer).
         """
         if self.initialized and not self.offline_mode:
             try:
@@ -97,7 +99,6 @@ class GEEPipeline:
                 )
                 accum = gpm.sum().clip(roi)
                 
-                # We could run a reduceRegion to get actual accumulation_mm, but for now we just return the layer
                 vis_params = {"min": 0, "max": 200, "palette": ['blue', 'purple', 'yellow', 'red']}
                 map_id = accum.getMapId(vis_params)
 
@@ -106,7 +107,7 @@ class GEEPipeline:
                     status="available",
                     start_date=start_date,
                     end_date=end_date,
-                    accumulation_mm=125.0, # Dummy stat for now, in a real scenario we use ee.Reducer
+                    accumulation_mm=None,
                     tile_url=map_id["tile_fetcher"].url_format
                 )
             except Exception as e:
@@ -118,12 +119,12 @@ class GEEPipeline:
 
         return LayerInfo(
             dataset="NASA/GPM_L3/IMERG_V07",
-            status="available",
+            status="unavailable",
             start_date=start_date,
             end_date=end_date,
-            accumulation_mm=85.5,
-            tile_url="https://mock-tile-server.local/gpm_rainfall/{z}/{x}/{y}.png",
-            reason="Offline test mode"
+            accumulation_mm=None,
+            tile_url=None,
+            reason="offline"
         )
 
     def generate_evidence(self, bbox: list, date_str: str) -> GeospatialEvidence:
