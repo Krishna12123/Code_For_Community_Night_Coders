@@ -101,8 +101,39 @@ class ForecastConeResponse(BaseModel):
     features: List[ConeFeature]
 
 
+class WindBufferFeature(BaseModel):
+    type: str = "Feature"
+    properties: Dict[str, Any]
+    geometry: ConeGeometry
+
+
+class WindBufferResponse(BaseModel):
+    cyclone_id: str
+    type: str = "FeatureCollection"
+    features: List[WindBufferFeature]
+
+
+class AIAction(BaseModel):
+    priority: str
+    phase: str
+    sector: str
+    instruction: str
+
+
+class AIBriefingResponse(BaseModel):
+    cyclone_id: str
+    executive_summary: str
+    threat_level: str
+    high_risk_districts: List[str]
+    critical_actions: List[AIAction]
+    evidence_used: List[str] = []
+    limitations: List[str] = []
+    mode: str = "live"
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str
     docs: str
     version: str
+

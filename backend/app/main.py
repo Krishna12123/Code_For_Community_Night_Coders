@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.database import init_db
-from app.routers import cyclones, risk, actions, geospatial
+from app.routers import cyclones, risk, actions, geospatial, ai
 from app.schemas.models import HealthResponse
 
 
@@ -49,6 +49,7 @@ app.include_router(cyclones.router, prefix=f"{settings.API_V1_STR}/cyclones", ta
 app.include_router(risk.router, prefix=f"{settings.API_V1_STR}/risk", tags=["Risk & Exposure"])
 app.include_router(actions.router, prefix=f"{settings.API_V1_STR}/actions", tags=["Actions & SOPs"])
 app.include_router(geospatial.router, prefix=f"{settings.API_V1_STR}/geospatial", tags=["Geospatial & GEE Layers"])
+app.include_router(ai.router, prefix=f"{settings.API_V1_STR}/ai", tags=["Gemini AI Briefings"])
 
 
 # WebSocket Manager for Live Emergency Alerts

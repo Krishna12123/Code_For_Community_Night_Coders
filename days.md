@@ -35,17 +35,17 @@ A day-by-day, person-by-person breakdown for delivering the **Cyclone Risk Asses
 ---
 
 ### 🧑‍💻 Krishna (FastAPI Backend & DB)
-- [ ] **Task 1.1 (FastAPI Scaffold)**: Initialize FastAPI app (`app/main.py`, router structure, CORS for Harshit's React dev server, `.env` config).
-- [ ] **Task 1.2 (Pydantic Schemas & API Contracts)**:
+- [x] **Task 1.1 (FastAPI Scaffold)**: Initialize FastAPI app (`app/main.py`, router structure, CORS for Harshit's React dev server, `.env` config).
+- [x] **Task 1.2 (Pydantic Schemas & API Contracts)**:
   - Define schemas: `CycloneTrack`, `ForecastPoint`, `RiskAssessment`, `ActionRecommendation`, `GeeTileResponse`.
-- [ ] **Task 1.3 (Mock API Endpoints)**:
+- [x] **Task 1.3 (Mock API Endpoints)**:
   - Build stub endpoints:
     - `GET /api/v1/cyclones/active`
     - `GET /api/v1/risk/exposure/{cyclone_id}`
     - `GET /api/v1/actions/recommendations/{cyclone_id}`
     - `GET /api/v1/geospatial/layers`
-- [ ] **Task 1.4 (Database / Geo Setup)**: Setup SQLite/PostgreSQL with spatial district boundaries and hospital/shelter mock datasets.
-- [ ] **Deliverable Day 1**: Working FastAPI server returning mock JSON payloads matching agreed schemas for Harshit to develop against.
+- [x] **Task 1.4 (Database / Geo Setup)**: Setup SQLite/PostgreSQL with spatial district boundaries and hospital/shelter mock datasets.
+- [x] **Deliverable Day 1**: Working FastAPI server returning mock JSON payloads matching agreed schemas for Harshit to develop against.
 
 ---
 
@@ -81,17 +81,17 @@ A day-by-day, person-by-person breakdown for delivering the **Cyclone Risk Asses
 ---
 
 ### 🧑‍💻 Krishna (FastAPI Backend & Risk Engine)
-- [ ] **Task 2.1 (Cone of Uncertainty & Wind Buffer Logic)**:
+- [x] **Task 2.1 (Cone of Uncertainty & Wind Buffer Logic)**:
   - Implement spatial buffering algorithms (34kt, 50kt, 64kt wind radii along track).
-- [ ] **Task 2.2 (Exposure & Risk Calculation Engine)**:
+- [x] **Task 2.2 (Exposure & Risk Calculation Engine)**:
   - Overlay cone polygon with district dataset:
     - Calculate population within high wind / flood zone.
     - Identify vulnerable hospitals, shelters, and roads.
   - Compute Composite Risk Score ($\text{Score} \in [0, 100]$) and categorize into Green/Yellow/Orange/Red.
-- [ ] **Task 2.3 (Action Engine Rule Processor)**:
+- [x] **Task 2.3 (Action Engine Rule Processor)**:
   - Build rule mapper: Risk Level $\rightarrow$ Trigger specific SOP protocols (evacuation radius, SDRF deployment, shelter activations).
-- [ ] **Task 2.4 (Service Integration)**: Connect Vikash's GEE tile generator and Gemini modules into FastAPI service layer.
-- [ ] **Deliverable Day 2**: Fully functional risk scoring and action generation backend responding with live GEE tile URLs and Gemini briefings.
+- [x] **Task 2.4 (Service Integration)**: Connect Vikash's GEE tile generator and Gemini modules into FastAPI service layer.
+- [x] **Deliverable Day 2**: Fully functional risk scoring and action generation backend responding with live GEE tile URLs and Gemini briefings.
 
 ---
 

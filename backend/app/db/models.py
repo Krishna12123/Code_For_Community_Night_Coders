@@ -13,6 +13,11 @@ class DistrictDB(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, index=True, nullable=False)
+    lat = Column(Float, default=14.5)
+    lon = Column(Float, default=80.0)
+    baseline_population = Column(Integer, default=500000)
+    total_hospitals = Column(Integer, default=10)
+    total_shelters = Column(Integer, default=30)
     risk_score = Column(Float, default=0.0)
     risk_level = Column(String(20), default="GREEN")  # RED, ORANGE, YELLOW, GREEN
     flooded_area_sq_km = Column(Float, default=0.0)
