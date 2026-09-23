@@ -1,6 +1,6 @@
 """
 Emergency Action SOP & Triage API Router
-Owner: Krishna
+Owner: Krishna (Backend & Risk Engine Architect)
 """
 
 from typing import List
@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.schemas.models import ActionItem, StatusUpdateRequest
 from app.db.database import get_db
+from app.services.action_engine import action_engine
+from app.services.risk_engine import risk_engine
 from app.db import models
 
 router = APIRouter()
@@ -17,72 +19,22 @@ router = APIRouter()
 @router.get("/recommendations/{cyclone_id}", response_model=List[ActionItem])
 async def get_action_recommendations(cyclone_id: str, db: Session = Depends(get_db)):
     """
-    Returns prioritized emergency actions and department-assigned SOP items.
+    Returns prioritized emergency actions and department-assigned SOP items
+    dynamically mapped to threat tiers.
     """
-    db_actions = db.query(models.ActionItemDB).filter(models.ActionItemDB.cyclone_id == cyclone_id).all()
-    
-    if db_actions:
-        return [
-            ActionItem(
-                id=a.id,
-                priority=a.priority,
-                phase=a.phase,
-                sector=a.sector,
-                instruction=a.instruction,
-                status=a.status,
-                assigned_agency=a.assigned_agency
-            )
-            for a in db_actions
-        ]
-    
-    # Fallback initial SOPs if none in database for this cyclone
-    return [
-        ActionItem(
-            id="ACT-001",
-            priority="HIGH",
-            phase="PRE_LANDFALL",
-            sector="Evacuation",
-            instruction="Evacuate 45,000 residents from low-lying coastal villages (0-5km) in Nellore.",
-            status="IN_PROGRESS",
-            assigned_agency="NDRF Battalion 10 & District Revenue"
-        ),
-        ActionItem(
-            id="ACT-002",
-            priority="HIGH",
-            phase="PRE_LANDFALL",
-            sector="Medical",
-            instruction="Deliver diesel generator backup & oxygen supplies to 8 high-risk hospitals.",
-            status="COMPLETED",
-            assigned_agency="District Medical & Health Office"
-        ),
-        ActionItem(
-            id="ACT-003",
-            priority="HIGH",
-            phase="PRE_LANDFALL",
-            sector="Shelter",
-            instruction="Activate 42 cyclone relief shelters with 72-hour dry food and potable water supplies.",
-            status="IN_PROGRESS",
-            assigned_agency="Civil Supplies & SDRF"
-        ),
-        ActionItem(
-            id="ACT-004",
-            priority="MEDIUM",
-            phase="LANDFALL",
-            sector="Power",
-            instruction="Pre-emptively shut down secondary electrical grids in vulnerable storm-surge zones.",
-            status="PENDING",
-            assigned_agency="State Electricity Distribution Company"
-        ),
-        ActionItem(
-            id="ACT-005",
-            priority="MEDIUM",
-            phase="POST_LANDFALL",
-            sector="Rescue",
-            instruction="Deploy 12 NDRF search and rescue boat teams along coastal river mouths.",
-            status="PENDING",
-            assigned_agency="NDRF & Indian Coast Guard"
-        )
-    ]
+    # 1. Fetch risk threat level
+    exposure = risk_engine.calculate_exposure_from_db(db=db, cyclone_id=cyclone_id)
+    red_districts = [d.district_name for d in exposure.high_risk_districts if d.risk_level == "RED"]
+
+    # 2. Retrieve or generate rule-based actions
+    actions = action_engine.get_or_create_actions_for_cyclone(
+        db=db,
+        cyclone_id=cyclone_id,
+        threat_level=exposure.threat_level,
+        red_districts=red_districts
+    )
+
+    return actions
 
 
 @router.post("/update-status")
@@ -97,13 +49,17 @@ async def update_action_status(payload: StatusUpdateRequest, db: Session = Depen
             detail=f"Invalid status '{payload.status}'. Must be one of {valid_statuses}"
         )
 
-    db_action = db.query(models.ActionItemDB).filter(models.ActionItemDB.id == payload.action_id).first()
-    if not db_action:
-        raise HTTPException(status_code=404, detail=f"Action item '{payload.action_id}' not found")
+    updated = action_engine.update_action_status(
+        db=db,
+        action_id=payload.action_id,
+        new_status=payload.status
+    )
 
-    db_action.status = payload.status
-    db.commit()
-    db.refresh(db_action)
+    if not updated:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Action item '{payload.action_id}' not found"
+        )
 
     return {
         "status": "success",

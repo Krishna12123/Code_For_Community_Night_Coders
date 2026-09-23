@@ -38,9 +38,29 @@ def get_db():
 def init_db():
     """
     Creates database tables and populates baseline spatial seed data if empty.
+    Handles schema migrations for added columns in SQLite.
     """
     from app.db import models
+    from sqlalchemy import inspect, text
+
     Base.metadata.create_all(bind=engine)
+    
+    # Check for missing columns in existing SQLite tables
+    inspector = inspect(engine)
+    if "districts" in inspector.get_table_names():
+        columns = [col["name"] for col in inspector.get_columns("districts")]
+        with engine.connect() as conn:
+            if "lat" not in columns:
+                conn.execute(text("ALTER TABLE districts ADD COLUMN lat FLOAT DEFAULT 14.5"))
+            if "lon" not in columns:
+                conn.execute(text("ALTER TABLE districts ADD COLUMN lon FLOAT DEFAULT 80.0"))
+            if "baseline_population" not in columns:
+                conn.execute(text("ALTER TABLE districts ADD COLUMN baseline_population INTEGER DEFAULT 500000"))
+            if "total_hospitals" not in columns:
+                conn.execute(text("ALTER TABLE districts ADD COLUMN total_hospitals INTEGER DEFAULT 10"))
+            if "total_shelters" not in columns:
+                conn.execute(text("ALTER TABLE districts ADD COLUMN total_shelters INTEGER DEFAULT 30"))
+            conn.commit()
     
     db = SessionLocal()
     try:
@@ -49,6 +69,11 @@ def init_db():
             seed_districts = [
                 models.DistrictDB(
                     name="Nellore",
+                    lat=14.4426,
+                    lon=79.9865,
+                    baseline_population=850000,
+                    total_hospitals=15,
+                    total_shelters=45,
                     risk_score=89.5,
                     risk_level="RED",
                     flooded_area_sq_km=142.5,
@@ -58,6 +83,11 @@ def init_db():
                 ),
                 models.DistrictDB(
                     name="Prakasam",
+                    lat=15.5057,
+                    lon=80.0499,
+                    baseline_population=750000,
+                    total_hospitals=12,
+                    total_shelters=35,
                     risk_score=81.0,
                     risk_level="RED",
                     flooded_area_sq_km=98.0,
@@ -67,6 +97,11 @@ def init_db():
                 ),
                 models.DistrictDB(
                     name="Bapatla",
+                    lat=15.9042,
+                    lon=80.4674,
+                    baseline_population=520000,
+                    total_hospitals=8,
+                    total_shelters=28,
                     risk_score=68.4,
                     risk_level="ORANGE",
                     flooded_area_sq_km=54.2,
@@ -76,12 +111,31 @@ def init_db():
                 ),
                 models.DistrictDB(
                     name="Krishna",
+                    lat=16.1800,
+                    lon=81.1300,
+                    baseline_population=600000,
+                    total_hospitals=14,
+                    total_shelters=40,
                     risk_score=45.0,
                     risk_level="YELLOW",
                     flooded_area_sq_km=21.0,
                     vulnerable_hospitals=2,
                     shelters_available=38,
                     population_exposed=280000
+                ),
+                models.DistrictDB(
+                    name="Guntur",
+                    lat=16.3067,
+                    lon=80.4365,
+                    baseline_population=450000,
+                    total_hospitals=10,
+                    total_shelters=30,
+                    risk_score=35.0,
+                    risk_level="YELLOW",
+                    flooded_area_sq_km=15.0,
+                    vulnerable_hospitals=1,
+                    shelters_available=28,
+                    population_exposed=120000
                 )
             ]
             db.add_all(seed_districts)
