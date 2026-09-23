@@ -4,7 +4,7 @@ Owner: Krishna
 """
 
 from typing import Dict, List, Any
-from app.models.schemas import RiskAssessment, DistrictRisk
+from app.schemas.models import RiskAssessment, DistrictRisk
 
 
 class RiskEngine:
@@ -13,7 +13,7 @@ class RiskEngine:
     and calculates composite multi-hazard risk scores.
     """
 
-    def calculate_exposure(self, cyclone_id: str, wind_speed: float, flooded_area: float) -> RiskAssessment:
+    def calculate_exposure(self, cyclone_id: str, wind_speed: float = 165.0, flooded_area: float = 142.5) -> RiskAssessment:
         """
         Calculates exposure metrics and categorizes district threat tiers.
         """
@@ -25,7 +25,8 @@ class RiskEngine:
                 risk_level="RED",
                 flooded_area_sq_km=142.5,
                 vulnerable_hospitals=8,
-                shelters_available=42
+                shelters_available=42,
+                population_exposed=620000
             ),
             DistrictRisk(
                 district_name="Prakasam",
@@ -33,7 +34,8 @@ class RiskEngine:
                 risk_level="RED",
                 flooded_area_sq_km=98.0,
                 vulnerable_hospitals=5,
-                shelters_available=30
+                shelters_available=30,
+                population_exposed=540000
             ),
             DistrictRisk(
                 district_name="Bapatla",
@@ -41,7 +43,8 @@ class RiskEngine:
                 risk_level="ORANGE",
                 flooded_area_sq_km=54.2,
                 vulnerable_hospitals=3,
-                shelters_available=25
+                shelters_available=25,
+                population_exposed=410000
             ),
             DistrictRisk(
                 district_name="Krishna",
@@ -49,7 +52,8 @@ class RiskEngine:
                 risk_level="YELLOW",
                 flooded_area_sq_km=21.0,
                 vulnerable_hospitals=2,
-                shelters_available=38
+                shelters_available=38,
+                population_exposed=280000
             )
         ]
 

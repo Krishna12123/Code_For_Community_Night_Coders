@@ -4,7 +4,7 @@ Owner: Krishna
 """
 
 from typing import List
-from app.models.schemas import ActionItem
+from app.schemas.models import ActionItem
 
 
 class ActionEngine:
@@ -21,7 +21,8 @@ class ActionEngine:
                 phase="PRE_LANDFALL",
                 sector="Evacuation",
                 instruction="Evacuate 45,000 residents from low-lying coastal villages (0-5km) in Nellore.",
-                status="IN_PROGRESS"
+                status="IN_PROGRESS",
+                assigned_agency="NDRF Battalion 10 & District Revenue"
             ),
             ActionItem(
                 id="ACT-002",
@@ -29,7 +30,8 @@ class ActionEngine:
                 phase="PRE_LANDFALL",
                 sector="Medical",
                 instruction="Deliver diesel generator backup & oxygen supplies to 8 high-risk hospitals.",
-                status="COMPLETED"
+                status="COMPLETED",
+                assigned_agency="District Medical & Health Office"
             ),
             ActionItem(
                 id="ACT-003",
@@ -37,7 +39,8 @@ class ActionEngine:
                 phase="PRE_LANDFALL",
                 sector="Shelter",
                 instruction="Activate 42 cyclone relief shelters with 72-hour dry food and potable water supplies.",
-                status="IN_PROGRESS"
+                status="IN_PROGRESS",
+                assigned_agency="Civil Supplies & SDRF"
             ),
             ActionItem(
                 id="ACT-004",
@@ -45,7 +48,8 @@ class ActionEngine:
                 phase="LANDFALL",
                 sector="Power",
                 instruction="Pre-emptively shut down secondary electrical grids in vulnerable storm-surge zones.",
-                status="PENDING"
+                status="PENDING",
+                assigned_agency="State Electricity Distribution Company"
             ),
             ActionItem(
                 id="ACT-005",
@@ -53,7 +57,8 @@ class ActionEngine:
                 phase="POST_LANDFALL",
                 sector="Rescue",
                 instruction="Deploy 12 NDRF search and rescue boat teams along coastal river mouths.",
-                status="PENDING"
+                status="PENDING",
+                assigned_agency="NDRF & Indian Coast Guard"
             )
         ]
 
