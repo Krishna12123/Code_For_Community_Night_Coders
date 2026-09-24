@@ -34,6 +34,7 @@ class LayerInfo(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     accumulation_mm: Optional[float] = None
+    flooded_area_sq_km: Optional[float] = None
     tile_url: Optional[str] = None
     reason: Optional[str] = None
 
