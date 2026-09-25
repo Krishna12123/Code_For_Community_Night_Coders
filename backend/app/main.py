@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.database import init_db
-from app.routers import cyclones, risk, actions, geospatial, ai
+from app.routers import cyclones, risk, actions, geospatial, ai, reports
 from app.schemas.models import HealthResponse
 
 
@@ -50,6 +50,8 @@ app.include_router(risk.router, prefix=f"{settings.API_V1_STR}/risk", tags=["Ris
 app.include_router(actions.router, prefix=f"{settings.API_V1_STR}/actions", tags=["Actions & SOPs"])
 app.include_router(geospatial.router, prefix=f"{settings.API_V1_STR}/geospatial", tags=["Geospatial & GEE Layers"])
 app.include_router(ai.router, prefix=f"{settings.API_V1_STR}/ai", tags=["Gemini AI Briefings"])
+app.include_router(reports.router, prefix=f"{settings.API_V1_STR}/reports", tags=["Situation Reports & PDF Export"])
+
 
 
 # WebSocket Manager for Live Emergency Alerts
@@ -95,6 +97,19 @@ async def websocket_alerts_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+
+
+@app.post(f"{settings.API_V1_STR}/ws/broadcast-alert")
+async def broadcast_alert(payload: dict):
+    """
+    Broadcasts an emergency bulletin or real-time notification to all active WebSocket clients.
+    """
+    await manager.broadcast(payload)
+    return {
+        "status": "success",
+        "recipients_count": len(manager.active_connections),
+        "broadcast_payload": payload
+    }
 
 
 @app.get("/", response_model=HealthResponse)
