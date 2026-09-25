@@ -32,10 +32,10 @@ def test_gemini_fallback(mock_storm, mock_evidence):
     )
     
     assert isinstance(briefing, AdvisoryBriefing)
-    assert briefing.mode == "demo_fixture"
-    assert "simulated demo scenario" in briefing.executive_summary.lower()
-    assert briefing.threat_level == "RED"
-    assert len(briefing.critical_actions) > 0
+    assert briefing.mode == "unavailable"
+    assert "unavailable" in briefing.executive_summary.lower()
+    assert briefing.threat_level == "UNKNOWN"
+    assert len(briefing.critical_actions) == 0
 
 def test_gemini_api_success(mocker, mock_storm, mock_evidence):
     advisor = GeminiDisasterAdvisor(api_key="fake-key")
@@ -75,6 +75,6 @@ def test_gemini_api_malformed_json_fallback(mocker, mock_storm, mock_evidence):
         mock_evidence
     )
     
-    # Must fallback to demo_fixture
+    # Must fallback to unavailable
     assert isinstance(briefing, AdvisoryBriefing)
-    assert briefing.mode == "demo_fixture"
+    assert briefing.mode == "unavailable"

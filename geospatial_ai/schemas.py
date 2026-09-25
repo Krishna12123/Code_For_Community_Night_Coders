@@ -57,4 +57,4 @@ class AdvisoryBriefing(BaseModel):
     critical_actions: List[Action]
     evidence_used: List[str] = []
     limitations: List[str] = []
-    mode: Literal["live", "demo_fixture"] = "live"
+    mode: Literal["live", "demo_fixture", "unavailable"] = "live"
