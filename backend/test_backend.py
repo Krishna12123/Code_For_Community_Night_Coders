@@ -190,7 +190,7 @@ def test_backend_suite():
     print(f" Circular Buffer Generator: 36 vertices + closing loop verified.")
 
     # 9. WebSocket Alerts Live Broadcast Channel
-    print("\n--- 9. Testing WebSocket Alerts Live Broadcast Channel ---")
+    print("\n--- 9. Testing WebSocket Alerts Live Broadcast Channel & Broadcaster ---")
     with client.websocket_connect("/api/v1/ws/alerts") as ws:
         msg = ws.receive_json()
         assert msg["type"] == "SYSTEM_INFO"
@@ -200,20 +200,56 @@ def test_backend_suite():
         assert resp == "pong"
         print(" WebSocket Ping-Pong Heartbeat OK.")
 
-    # 10. Tomorrow (Day 3) Forward Compatibility Check
-    print("\n--- 10. Testing Tomorrow's (Day 3) Forward Compatibility ---")
-    # Day 3 requirements:
-    # Task 3.1: Live WebSocket channel is operational and tested above.
-    # Task 3.2: Action updates persist; situation data has all metrics needed for PDF Situation Report generation.
-    # Task 3.3: Error resilience and calibrated fallbacks exist for all external services.
-    print(" Verified Day 3 compatibility: WebSocket alert broadcasting ready.")
-    print(" Verified Day 3 compatibility: Situation report data structures ready for PDF generation.")
-    print(" Verified Day 3 compatibility: GEE/Gemini offline resilience ready.")
+        # Test POST /api/v1/ws/broadcast-alert pushing message to live client
+        res_broadcast = client.post("/api/v1/ws/broadcast-alert", json={
+            "type": "EMERGENCY_BROADCAST",
+            "severity": "CRITICAL",
+            "headline": "Storm Landfall Warning: Eye approaching Nellore within 18 hours.",
+            "cyclone_id": "CYC-2026-01"
+        })
+        assert res_broadcast.status_code == 200
+        broadcast_received = ws.receive_json()
+        assert broadcast_received["type"] == "EMERGENCY_BROADCAST"
+        assert broadcast_received["severity"] == "CRITICAL"
+        print(f" WebSocket Alert Broadcast verified: Client received live alert '{broadcast_received['headline']}'")
+
+    # 10. Official PDF & JSON Situation Report (SITREP) Generation (Day 3 Feature)
+    print("\n--- 10. Testing Official Situation Report (SITREP) Endpoints (Day 3) ---")
+    res_pdf = client.get("/api/v1/reports/situation-report/pdf/CYC-2026-01")
+    assert res_pdf.status_code == 200, f"PDF report generation failed: {res_pdf.text}"
+    assert res_pdf.headers["content-type"] == "application/pdf"
+    assert res_pdf.content.startswith(b"%PDF-"), "Response is not a valid PDF binary"
+    assert len(res_pdf.content) > 3000, f"PDF content unexpectedly small: {len(res_pdf.content)} bytes"
+    print(f" Official PDF Situation Report Generated Successfully: {len(res_pdf.content):,} bytes (Valid PDF binary)")
+
+    # JSON Situation Report
+    res_json_report = client.get("/api/v1/reports/situation-report/json/CYC-2026-01")
+    assert res_json_report.status_code == 200, f"JSON report failed: {res_json_report.text}"
+    report_data = res_json_report.json()
+    assert report_data["cyclone_id"] == "CYC-2026-01"
+    assert "storm_telemetry" in report_data
+    assert "risk_assessment" in report_data
+    assert "operational_actions" in report_data
+    assert len(report_data["operational_actions"]) >= 5
+    print(f" Structured JSON Situation Report Verified: Report ID {report_data['report_id']}")
+
+    # Unified report endpoint
+    res_unified_pdf = client.get("/api/v1/reports/situation-report/CYC-2026-01?format=pdf")
+    assert res_unified_pdf.status_code == 200 and res_unified_pdf.content.startswith(b"%PDF-")
+    res_unified_json = client.get("/api/v1/reports/situation-report/CYC-2026-01?format=json")
+    assert res_unified_json.status_code == 200 and "report_id" in res_unified_json.json()
+    print(" Unified Situation Report endpoint (?format=pdf/json) verified.")
+
+    # Backward compatibility endpoint
+    res_compat = client.get("/api/v1/risk/report/CYC-2026-01")
+    assert res_compat.status_code == 200 and "report_id" in res_compat.json()
+    print(" Backward compatibility endpoint /api/v1/risk/report/CYC-2026-01 verified.")
 
     print("\n================================================================")
-    print(" ALL 10 TEST SUITES PASSED FLAWLESSLY! DAY 2 BACKEND COMPLETE.")
+    print(" 🎉 ALL 10 COMPREHENSIVE TEST SUITES PASSED! DAY 3 COMPLETE.")
     print("================================================================")
 
 
 if __name__ == "__main__":
     test_backend_suite()
+

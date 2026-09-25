@@ -46,3 +46,13 @@ async def get_district_risk_breakdown(cyclone_id: str, db: Session = Depends(get
     """
     assessment = await get_cyclone_exposure(cyclone_id=cyclone_id, db=db)
     return assessment.high_risk_districts
+
+
+@router.get("/report/{cyclone_id}")
+async def get_cyclone_risk_report(cyclone_id: str, db: Session = Depends(get_db)):
+    """
+    Returns consolidated Situation Report data for the requested cyclone ID.
+    """
+    from app.routers.reports import get_situation_report_json
+    return await get_situation_report_json(cyclone_id=cyclone_id, db=db)
+

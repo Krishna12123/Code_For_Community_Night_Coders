@@ -227,31 +227,33 @@ class DataBridge:
                     geospatial_evidence=evidence
                 )
 
-                actions = [
-                    AIAction(
-                        priority=a.priority if hasattr(a, "priority") else a.get("priority", "HIGH"),
-                        phase=a.phase if hasattr(a, "phase") else a.get("phase", "PRE_LANDFALL"),
-                        sector=a.sector if hasattr(a, "sector") else a.get("sector", "Emergency"),
-                        instruction=a.instruction if hasattr(a, "instruction") else a.get("instruction", "")
-                    )
-                    for a in briefing.critical_actions
-                ]
+                if briefing.mode != "unavailable" and len(briefing.critical_actions) > 0:
+                    actions = [
+                        AIAction(
+                            priority=a.priority if hasattr(a, "priority") else a.get("priority", "HIGH"),
+                            phase=a.phase if hasattr(a, "phase") else a.get("phase", "PRE_LANDFALL"),
+                            sector=a.sector if hasattr(a, "sector") else a.get("sector", "Emergency"),
+                            instruction=a.instruction if hasattr(a, "instruction") else a.get("instruction", "")
+                        )
+                        for a in briefing.critical_actions
+                    ]
 
-                result = AIBriefingResponse(
-                    cyclone_id=cyclone_id,
-                    executive_summary=briefing.executive_summary,
-                    threat_level=briefing.threat_level,
-                    high_risk_districts=briefing.high_risk_districts,
-                    critical_actions=actions,
-                    evidence_used=briefing.evidence_used,
-                    limitations=briefing.limitations,
-                    mode=briefing.mode
-                )
-                self._cache[cache_key] = result
-                self._cache_timestamps[cache_key] = time.time()
-                return result
+                    result = AIBriefingResponse(
+                        cyclone_id=cyclone_id,
+                        executive_summary=briefing.executive_summary,
+                        threat_level=briefing.threat_level,
+                        high_risk_districts=briefing.high_risk_districts,
+                        critical_actions=actions,
+                        evidence_used=briefing.evidence_used,
+                        limitations=briefing.limitations,
+                        mode=briefing.mode
+                    )
+                    self._cache[cache_key] = result
+                    self._cache_timestamps[cache_key] = time.time()
+                    return result
             except Exception as e:
                 print(f"[DataBridge Gemini Error] {e}. Using calibrated advisory.")
+
 
         # Calibrated baseline AI advisory
         result = AIBriefingResponse(
