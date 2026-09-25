@@ -67,33 +67,15 @@ class GeminiDisasterAdvisor:
             except Exception as e:
                 print(f"[Gemini] API call failed: {e}. Using fallback briefing.")
 
-        # High quality calibrated fallback briefing for demo
+        # Strict unavailable/error fallback state
         return AdvisoryBriefing(
-            executive_summary=(
-                f"Severe Cyclonic Storm '{storm_data.name}' is packing sustained winds of "
-                f"{storm_data.max_sustained_wind_kmh} km/h with central pressure {storm_data.central_pressure_mb} mb. "
-                "Projected landfall along coastal Andhra Pradesh within 18 hours. "
-                "This is a simulated demo scenario based on historical analogs."
-            ),
-            threat_level="RED",
-            high_risk_districts=["Nellore", "Prakasam", "Bapatla"],
-            critical_actions=[
-                {
-                    "priority": "HIGH",
-                    "phase": "PRE_LANDFALL",
-                    "sector": "Evacuation",
-                    "instruction": "Advise evacuation of all habitations within 5km from coastline."
-                },
-                {
-                    "priority": "HIGH",
-                    "phase": "PRE_LANDFALL",
-                    "sector": "Medical",
-                    "instruction": "Deploy mobile power generators and blood reserves to district hospitals."
-                }
-            ],
-            evidence_used=["Simulated cyclone track", "Mock GPM accumulation"],
-            limitations=["This is a demo fixture. No real-time ground truth is available."],
-            mode="demo_fixture"
+            executive_summary="AI briefing is currently unavailable due to missing API key or connection failure. No automated advisory can be generated.",
+            threat_level="UNKNOWN",
+            high_risk_districts=[],
+            critical_actions=[],
+            evidence_used=[],
+            limitations=["AI services are offline or unreachable. No live analysis available."],
+            mode="unavailable"
         )
 
 
