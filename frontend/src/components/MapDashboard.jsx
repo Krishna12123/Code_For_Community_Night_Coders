@@ -9,11 +9,9 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Layers, Wind, CloudRain, Building2, Eye, Navigation, Compass, Waves, X, Loader2 } from 'lucide-react';
-import { fetchMarineWeather } from '../services/api';
+import { Layers, Wind, CloudRain, Building2, Eye, Navigation } from 'lucide-react';
 
 mapboxgl.accessToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
-
 
 
 /* ═══════════════════════════════════════════
@@ -106,15 +104,19 @@ function buildRainfallZone() {
    Map Dashboard Component
    ═══════════════════════════════════════════ */
 
-export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
+export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelters, geospatialLayers }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const eyeMarkerRef = useRef(null);
   const animFrameRef = useRef(null);
   const layersAddedRef = useRef(false);
+  const cycloneRef = useRef(cyclone); // Always holds latest cyclone prop
   const [mapReady, setMapReady] = useState(false);
-  const [marineWeather, setMarineWeather] = useState(null);
-  const [isLoadingMarine, setIsLoadingMarine] = useState(false);
+
+  // Keep cycloneRef in sync with latest prop
+  useEffect(() => {
+    cycloneRef.current = cyclone;
+  }, [cyclone]);
 
   const [activeLayers, setActiveLayers] = useState({
     track: true,
@@ -169,52 +171,18 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
         maxzoom: 14
       });
       map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
-      map.resize();
       setMapReady(true);
-    });
-
-    // Immediate and delayed resize triggers to ensure full WebGL canvas synchronization
-    const initialResizeTimer = setTimeout(() => {
-      if (mapRef.current) mapRef.current.resize();
-    }, 150);
-
-    // ResizeObserver watches container element for any grid or flexbox dimension changes
-    let resizeObserver = null;
-    if (window.ResizeObserver && containerRef.current) {
-      resizeObserver = new ResizeObserver(() => {
-        if (mapRef.current) {
-          mapRef.current.resize();
-        }
-      });
-      resizeObserver.observe(containerRef.current);
-    }
-
-    // Map click handler to probe live Indian Ocean marine weather
-    map.on('click', async (e) => {
-      const { lng, lat } = e.lngLat;
-      setIsLoadingMarine(true);
-      try {
-        const data = await fetchMarineWeather(lat, lng);
-        setMarineWeather(data);
-      } catch (err) {
-        console.warn('Failed to load marine weather:', err);
-      } finally {
-        setIsLoadingMarine(false);
-      }
     });
 
     mapRef.current = map;
 
     return () => {
-      clearTimeout(initialResizeTimer);
-      if (resizeObserver) resizeObserver.disconnect();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (eyeMarkerRef.current) eyeMarkerRef.current.remove();
       map.remove();
       mapRef.current = null;
     };
   }, []);
-
 
 
   /* ── 2. Add GeoJSON Data Layers ── */
@@ -224,30 +192,18 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
     layersAddedRef.current = true;
 
     // ──────── GPM Rainfall Zone (bottom layer) ────────
-    map.addSource('gpm-rain', { type: 'geojson', data: buildRainfallZone() });
+    if (mode === 'demo' || geospatialLayers?.layers?.gpm_rainfall?.status !== 'available') { map.addSource('gpm-rain', { type: 'geojson', data: mode === 'demo' ? buildRainfallZone() : {type: 'FeatureCollection', features: []} }); } else { map.addSource('gpm-rain', { type: 'raster', tiles: [geospatialLayers.layers.gpm_rainfall.tile_url], tileSize: 256 }); }
     map.addLayer({
       id: 'gpm-rain-fill', type: 'fill', source: 'gpm-rain',
       layout: { visibility: activeLayers.gpmRain ? 'visible' : 'none' },
       paint: { 'fill-color': '#a855f7', 'fill-opacity': 0.18 }
     });
-    map.addLayer({
-      id: 'gpm-rain-border', type: 'line', source: 'gpm-rain',
-      layout: { visibility: activeLayers.gpmRain ? 'visible' : 'none' },
-      paint: { 'line-color': '#c084fc', 'line-width': 1.5, 'line-dasharray': [4, 3] }
-    });
+    if (mode === 'demo' || geospatialLayers?.layers?.gpm_rainfall?.status !== 'available') { map.addLayer({ id: 'gpm-rain-border', type: 'line', source: 'gpm-rain', layout: { visibility: activeLayers.gpmRain ? 'visible' : 'none' }, paint: { 'line-color': '#c084fc', 'line-width': 1.5, 'line-dasharray': [4, 3] } }); }
 
     // ──────── SAR Flood Inundation Zone ────────
-    map.addSource('sar-flood', { type: 'geojson', data: buildFloodZone() });
-    map.addLayer({
-      id: 'sar-flood-fill', type: 'fill', source: 'sar-flood',
-      layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' },
-      paint: { 'fill-color': '#06b6d4', 'fill-opacity': 0.22 }
-    });
-    map.addLayer({
-      id: 'sar-flood-border', type: 'line', source: 'sar-flood',
-      layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' },
-      paint: { 'line-color': '#22d3ee', 'line-width': 1.5, 'line-dasharray': [4, 2] }
-    });
+    if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addSource('sar-flood', { type: 'geojson', data: mode === 'demo' ? buildFloodZone() : {type: 'FeatureCollection', features: []} }); } else { map.addSource('sar-flood', { type: 'raster', tiles: [geospatialLayers.layers.sar_flood.tile_url], tileSize: 256 }); }
+    if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addLayer({ id: 'sar-flood-fill', type: 'fill', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'fill-color': '#06b6d4', 'fill-opacity': 0.22 } }); } else { map.addLayer({ id: 'sar-flood-raster', type: 'raster', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'raster-opacity': 0.75 } }); }
+    if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addLayer({ id: 'sar-flood-border', type: 'line', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'line-color': '#22d3ee', 'line-width': 1.5, 'line-dasharray': [4, 2] } }); }
 
     // ──────── Forecast Cone of Uncertainty ────────
     map.addSource('forecast-cone', { type: 'geojson', data: buildForecastCone(cyclone) });
@@ -336,16 +292,16 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
-        features: [
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [79.98, 14.44] },
-            properties: { name: 'Nellore Shelter #4', capacity: 1200 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.05, 15.35] },
-            properties: { name: 'Prakasam Shelter #12', capacity: 800 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.47, 15.90] },
-            properties: { name: 'Bapatla Relief Camp', capacity: 600 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.64, 15.50] },
-            properties: { name: 'Ongole District Hospital', capacity: 450 } },
-        ]
+        features: (shelters && shelters.length > 0 ? shelters : [
+          { name: 'Nellore Shelter #4', capacity: 1200, lat: 14.44, lon: 79.98 },
+          { name: 'Prakasam Shelter #12', capacity: 800, lat: 15.35, lon: 80.05 },
+          { name: 'Bapatla Relief Camp', capacity: 600, lat: 15.90, lon: 80.47 },
+          { name: 'Ongole District Hospital', capacity: 450, lat: 15.50, lon: 80.64 }
+        ]).map(s => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+          properties: { name: s.name, capacity: s.capacity }
+        }))
       }
     });
     map.addLayer({
@@ -531,46 +487,135 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
         if (!mapRef.current) return;
         
         const elapsed = now - START_TIME;
-        const angle = -(elapsed * ROTATE_SPEED) % (Math.PI * 2); // negative for clockwise/counter depending on hemisphere
+        const angle = -(elapsed * ROTATE_SPEED) % (Math.PI * 2);
         
-        const driftT = Math.min(elapsed / DRIFT_DUR, 1);
-        const ease = 1 - Math.pow(1 - driftT, 3);
-        const curLng = startLng + ease * (nextLng - startLng);
-        const curLat = startLat + ease * (nextLat - startLat);
-        
-        const coords = getRotatedCoordinates(curLng, curLat, angle);
-        const source = map.getSource('cyclone-overlay');
-        if (source) {
-          source.setCoordinates(coords);
-        }
-        
-        // Also move the tiny popup dot
-        if (eyeMarkerRef.current) {
-          eyeMarkerRef.current.setLngLat([curLng, curLat]);
-        }
-        
-        // Emit dynamic phase based on animation progress (simulating distance to coast)
-        if (onPhaseChange) {
-           let currentPhase = 'PRE_LANDFALL';
-           if (driftT > 0.6 && driftT < 0.8) currentPhase = 'LANDFALL';
-           else if (driftT >= 0.8) currentPhase = 'POST_LANDFALL';
-           
-           if (currentPhase !== lastPhase) {
-             lastPhase = currentPhase;
-             onPhaseChange(currentPhase);
-           }
+        if (mode === 'demo') {
+          // In demo mode: rotate at the LATEST position from cycloneRef
+          const c = cycloneRef.current;
+          if (!c?.current_position) return;
+          const cLng = c.current_position.lon;
+          const cLat = c.current_position.lat;
+          
+          const coords = getRotatedCoordinates(cLng, cLat, angle);
+          const source = map.getSource('cyclone-overlay');
+          if (source) source.setCoordinates(coords);
+          if (eyeMarkerRef.current) eyeMarkerRef.current.setLngLat([cLng, cLat]);
+        } else {
+          // In live mode: drift toward next forecast point
+          const driftT = Math.min(elapsed / DRIFT_DUR, 1);
+          const ease = 1 - Math.pow(1 - driftT, 3);
+          const curLng = startLng + ease * (nextLng - startLng);
+          const curLat = startLat + ease * (nextLat - startLat);
+          
+          const coords = getRotatedCoordinates(curLng, curLat, angle);
+          const source = map.getSource('cyclone-overlay');
+          if (source) source.setCoordinates(coords);
+          if (eyeMarkerRef.current) eyeMarkerRef.current.setLngLat([curLng, curLat]);
+          
+          // Emit dynamic phase
+          if (onPhaseChange) {
+            let currentPhase = 'PRE_LANDFALL';
+            if (driftT > 0.6 && driftT < 0.8) currentPhase = 'LANDFALL';
+            else if (driftT >= 0.8) currentPhase = 'POST_LANDFALL';
+            
+            if (currentPhase !== lastPhase) {
+              lastPhase = currentPhase;
+              onPhaseChange(currentPhase);
+            }
+          }
+          
+          if (driftT >= 1) return; // Stop after drift completes
         }
 
-        if (driftT < 1) {
-          animFrameRef.current = requestAnimationFrame(animateRaster);
-        }
+        animFrameRef.current = requestAnimationFrame(animateRaster);
       }
       
       animFrameRef.current = requestAnimationFrame(animateRaster);
     });
-
   }, [mapReady, cyclone]);
 
+
+  /* ── 2b. Demo Mode: Live Track & Cone Updates ── */
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || mode !== 'demo' || !cyclone) return;
+    const map = mapRef.current;
+
+    // Update past track line
+    const pastSrc = map.getSource('past-track');
+    if (pastSrc && cyclone.past_track?.length) {
+      pastSrc.setData({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: cyclone.past_track.map(p => [p.lon, p.lat])
+        }
+      });
+    }
+
+    // Update past track dots
+    const pastDotsSrc = map.getSource('past-points');
+    if (pastDotsSrc && cyclone.past_track?.length) {
+      pastDotsSrc.setData({
+        type: 'FeatureCollection',
+        features: cyclone.past_track.map(p => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+          properties: { wind: p.wind_kmh, time: p.timestamp }
+        }))
+      });
+    }
+
+    // Update forecast track line
+    const fcSrc = map.getSource('forecast-track');
+    if (fcSrc && cyclone.forecast_track?.length) {
+      const coords = [
+        [cyclone.current_position.lon, cyclone.current_position.lat],
+        ...cyclone.forecast_track.map(p => [p.lon, p.lat])
+      ];
+      fcSrc.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: coords }
+      });
+    }
+
+    // Update forecast dots
+    const fcDotsSrc = map.getSource('forecast-points');
+    if (fcDotsSrc && cyclone.forecast_track?.length) {
+      fcDotsSrc.setData({
+        type: 'FeatureCollection',
+        features: cyclone.forecast_track.map(p => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+          properties: { wind: p.wind_kmh, time: p.timestamp }
+        }))
+      });
+    }
+
+    // Update cone of uncertainty
+    const coneSrc = map.getSource('forecast-cone');
+    if (coneSrc) {
+      coneSrc.setData(buildForecastCone(cyclone));
+    }
+
+  }, [mapReady, cyclone, mode]);
+
+  /* ── 2c. Update Shelters Layer ── */
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !shelters || shelters.length === 0) return;
+    const map = mapRef.current;
+    
+    const shelterSrc = map.getSource('shelters');
+    if (shelterSrc) {
+      shelterSrc.setData({
+        type: 'FeatureCollection',
+        features: shelters.map(s => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+          properties: { name: s.name, capacity: s.capacity }
+        }))
+      });
+    }
+  }, [mapReady, shelters]);
 
   /* ── 3. Layer Visibility Toggle ── */
   useEffect(() => {
@@ -580,8 +625,8 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
     const groups = {
       track: ['past-track-line', 'past-track-dots', 'forecast-track-line', 'forecast-track-dots'],
       cone: ['cone-fill', 'cone-border'],
-      sarFlood: ['sar-flood-fill', 'sar-flood-border'],
-      gpmRain: ['gpm-rain-fill', 'gpm-rain-border'],
+      sarFlood: ['sar-flood-fill', 'sar-flood-border', 'sar-flood-raster'],
+      gpmRain: ['gpm-rain-fill', 'gpm-rain-border', 'gpm-rain-raster'],
       shelters: ['shelter-circles', 'shelter-labels'],
     };
 
@@ -603,8 +648,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
     <div className="relative w-full h-full bg-[#0b1120] rounded-xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col">
 
       {/* Mapbox GL Canvas */}
-      <div ref={containerRef} className="flex-1 w-full h-full min-h-0 relative" />
-
+      <div ref={containerRef} className="flex-1" />
 
       {/* Coordinate & Mode HUD */}
       <div className="absolute bottom-[72px] left-4 bg-gray-950/90 border border-gray-800 px-3 py-1.5 rounded-lg text-xs font-mono text-gray-400 flex items-center space-x-3 z-10 backdrop-blur-sm">
@@ -614,60 +658,9 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
           {cyclone?.current_position?.lon?.toFixed(2) || '82.10'}&deg;E
         </span>
         <span className="text-gray-700">|</span>
-        <span className="text-[10px] text-sky-400/80">Click ocean for live wind</span>
+        <Navigation className="w-3.5 h-3.5 text-purple-400" />
+        <span>3D Globe + Terrain</span>
       </div>
-
-      {/* Live Ocean Marine Weather Probe Card */}
-      {marineWeather && (
-        <div className="absolute top-4 left-4 bg-gray-950/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl z-20 backdrop-blur-md max-w-xs transition-all duration-300">
-          <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800">
-            <div className="flex items-center space-x-1.5 text-sky-400 font-bold text-xs">
-              <Waves className="w-4 h-4" />
-              <span>Indian Ocean Live Telemetry</span>
-            </div>
-            <button
-              onClick={() => setMarineWeather(null)}
-              className="text-gray-400 hover:text-white p-0.5 rounded transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="space-y-1 text-xs">
-            <div className="flex items-center justify-between text-gray-300">
-              <span className="text-gray-500 text-[11px]">Location:</span>
-              <span className="font-mono font-bold text-white text-[11px]">{marineWeather.lat}&deg;N, {marineWeather.lon}&deg;E</span>
-            </div>
-            <div className="flex items-center justify-between text-gray-300">
-              <span className="text-gray-500 text-[11px] flex items-center space-x-1">
-                <Wind className="w-3 h-3 text-sky-400" />
-                <span>Ocean Wind:</span>
-              </span>
-              <span className="font-mono font-bold text-sky-300 text-[11px]">
-                {marineWeather.wind_speed_kmh} km/h <span className="text-[10px] text-gray-400">({marineWeather.wind_speed_kt} kt)</span>
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-gray-300">
-              <span className="text-gray-500 text-[11px] flex items-center space-x-1">
-                <Compass className="w-3 h-3 text-amber-400" />
-                <span>Direction:</span>
-              </span>
-              <span className="font-mono font-bold text-amber-300 text-[11px]">
-                {marineWeather.wind_direction_cardinal} ({marineWeather.wind_direction_deg}&deg;)
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-gray-300">
-              <span className="text-gray-500 text-[11px]">Surface Pressure:</span>
-              <span className="font-mono font-bold text-emerald-300 text-[11px]">{marineWeather.surface_pressure_hpa} hPa</span>
-            </div>
-            <div className="pt-1 text-[9px] text-gray-500 flex items-center justify-between border-t border-gray-900 mt-1">
-              <span>{marineWeather.source || 'Open-Meteo API'}</span>
-              <span className="text-emerald-400 font-mono font-bold">● LIVE</span>
-            </div>
-          </div>
-        </div>
-      )}
-
 
       {/* Layer Control Bar */}
       <div className="h-14 bg-gray-950 border-t border-gray-800 px-4 flex items-center justify-between text-xs z-10">
@@ -733,3 +726,6 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
     </div>
   );
 }
+
+
+
