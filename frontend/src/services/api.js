@@ -73,3 +73,72 @@ export const fetchActionRecommendations = async (cycloneId) => {
     ];
   }
 };
+
+export const updateActionStatusApi = async (actionId, status) => {
+  try {
+    const res = await fetch(`${API_BASE}/actions/update-status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action_id: actionId, status })
+    });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Error updating action status:', err);
+    return null;
+  }
+};
+
+export const fetchAIBriefing = async (cycloneId) => {
+  try {
+    const res = await fetch(`${API_BASE}/ai/briefing/${cycloneId}`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Using fallback AI briefing:', err);
+    return null;
+  }
+};
+
+export const downloadSituationReportPdf = async (cycloneId = 'CYC-2026-01') => {
+  try {
+    const res = await fetch(`${API_BASE}/reports/situation-report/pdf/${cycloneId}`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Disaster_Situation_Report_${cycloneId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    return true;
+  } catch (err) {
+    console.error('[API] Failed to download Situation Report PDF:', err);
+    alert('Failed to download Situation Report PDF. Check backend connectivity.');
+    return false;
+  }
+};
+
+export const fetchMarineWeather = async (lat = 14.5, lon = 82.1) => {
+  try {
+    const res = await fetch(`${API_BASE}/cyclones/marine/weather?lat=${lat}&lon=${lon}`);
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    return await res.json();
+  } catch (err) {
+    console.warn('[API] Failed to fetch live marine weather:', err);
+    return {
+      lat,
+      lon,
+      wind_speed_kmh: 32.5,
+      wind_speed_kt: 17.5,
+      wind_direction_deg: 215.0,
+      wind_direction_cardinal: 'SSW',
+      surface_pressure_hpa: 1008.5,
+      source: 'Calibrated Indian Ocean Baseline'
+    };
+  }
+};
+
+

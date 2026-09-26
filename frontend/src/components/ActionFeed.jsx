@@ -7,28 +7,42 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Sparkles, CheckCircle2, Clock, AlertCircle, Download, AlertTriangle } from 'lucide-react';
+import { Sparkles, CheckCircle2, Clock, AlertCircle, Download, AlertTriangle, Loader2 } from 'lucide-react';
+import { downloadSituationReportPdf, updateActionStatusApi } from '../services/api';
 
 export default function ActionFeed({ risk, actions: initialActions, livePhase }) {
   const [actions, setActions] = useState([]);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Sync with incoming prop data
   useEffect(() => {
     if (initialActions?.length) setActions(initialActions);
   }, [initialActions]);
 
-  const toggleStatus = (id) => {
+  const toggleStatus = async (id) => {
+    const targetItem = actions.find(a => a.id === id);
+    if (!targetItem) return;
+
+    const next =
+      targetItem.status === 'PENDING' ? 'IN_PROGRESS' :
+      targetItem.status === 'IN_PROGRESS' ? 'COMPLETED' : 'PENDING';
+
+    // Optimistic UI update
     setActions(prev =>
-      prev.map(item => {
-        if (item.id === id) {
-          const next =
-            item.status === 'PENDING' ? 'IN_PROGRESS' :
-            item.status === 'IN_PROGRESS' ? 'COMPLETED' : 'PENDING';
-          return { ...item, status: next };
-        }
-        return item;
-      })
+      prev.map(item => (item.id === id ? { ...item, status: next } : item))
     );
+
+    // Persist to FastAPI Backend DB
+    await updateActionStatusApi(id, next);
+  };
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await downloadSituationReportPdf(risk?.cyclone_id || 'CYC-2026-01');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Group actions by phase
@@ -62,11 +76,21 @@ export default function ActionFeed({ risk, actions: initialActions, livePhase })
             <Sparkles className="w-4 h-4 text-purple-400 animate-spin [animation-duration:8s]" />
             <span>Gemini AI Disaster Briefing</span>
           </div>
-          <button className="text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-2 py-1 rounded border border-purple-500/40 flex items-center space-x-1 transition-colors">
-            <Download className="w-3 h-3" />
-            <span>Export</span>
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="text-[10px] bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 px-2.5 py-1 rounded border border-purple-500/40 flex items-center space-x-1.5 transition-colors disabled:opacity-50"
+            title="Download Official Situation Report (PDF)"
+          >
+            {isExporting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Download className="w-3 h-3" />
+            )}
+            <span>{isExporting ? 'Exporting...' : 'PDF Report'}</span>
           </button>
         </div>
+
 
         <p className="text-xs text-gray-300 leading-relaxed">
           {risk?.executive_summary ||
