@@ -1,5 +1,5 @@
-/**
- * Interactive Geospatial Map Dashboard — Mapbox GL JS
+﻿/**
+ * Interactive Geospatial Map Dashboard â€” Mapbox GL JS
  * Owner: Harshit
  *
  * Renders a 3D globe with satellite basemap, cyclone track visualization,
@@ -9,14 +9,15 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Layers, Wind, CloudRain, Building2, Eye, Navigation } from 'lucide-react';
+import { Layers, Wind, CloudRain, Building2, Eye, Navigation, Navigation2, Droplets } from 'lucide-react';
+import { fetchMarineWeather } from '../services/api';
 
 mapboxgl.accessToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
 
 
-/* ═══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Geometry Builders
-   ═══════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 /**
  * Builds a cone-of-uncertainty polygon from the current position
@@ -100,11 +101,11 @@ function buildRainfallZone() {
 }
 
 
-/* ═══════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    Map Dashboard Component
-   ═══════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
-export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelters, geospatialLayers }) {
+export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelters, geospatialLayers, forecastCone, windBuffers }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const eyeMarkerRef = useRef(null);
@@ -112,6 +113,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
   const layersAddedRef = useRef(false);
   const cycloneRef = useRef(cyclone); // Always holds latest cyclone prop
   const [mapReady, setMapReady] = useState(false);
+  const [telemetry, setTelemetry] = useState({ show: false, loading: false, data: null, error: null, coords: null });
 
   // Keep cycloneRef in sync with latest prop
   useEffect(() => {
@@ -126,7 +128,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
     shelters: true
   });
 
-  /* ── 1. Map Initialization ── */
+  /* â”€â”€ 1. Map Initialization â”€â”€ */
   useEffect(() => {
     if (mapRef.current) return;
 
@@ -185,13 +187,13 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
   }, []);
 
 
-  /* ── 2. Add GeoJSON Data Layers ── */
+  /* â”€â”€ 2. Add GeoJSON Data Layers â”€â”€ */
   useEffect(() => {
     if (!mapReady || !mapRef.current || !cyclone || layersAddedRef.current) return;
     const map = mapRef.current;
     layersAddedRef.current = true;
 
-    // ──────── GPM Rainfall Zone (bottom layer) ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ GPM Rainfall Zone (bottom layer) â”€â”€â”€â”€â”€â”€â”€â”€
     if (mode === 'demo' || geospatialLayers?.layers?.gpm_rainfall?.status !== 'available') { map.addSource('gpm-rain', { type: 'geojson', data: mode === 'demo' ? buildRainfallZone() : {type: 'FeatureCollection', features: []} }); } else { map.addSource('gpm-rain', { type: 'raster', tiles: [geospatialLayers.layers.gpm_rainfall.tile_url], tileSize: 256 }); }
     map.addLayer({
       id: 'gpm-rain-fill', type: 'fill', source: 'gpm-rain',
@@ -200,13 +202,24 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
     });
     if (mode === 'demo' || geospatialLayers?.layers?.gpm_rainfall?.status !== 'available') { map.addLayer({ id: 'gpm-rain-border', type: 'line', source: 'gpm-rain', layout: { visibility: activeLayers.gpmRain ? 'visible' : 'none' }, paint: { 'line-color': '#c084fc', 'line-width': 1.5, 'line-dasharray': [4, 3] } }); }
 
-    // ──────── SAR Flood Inundation Zone ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ SAR Flood Inundation Zone â”€â”€â”€â”€â”€â”€â”€â”€
     if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addSource('sar-flood', { type: 'geojson', data: mode === 'demo' ? buildFloodZone() : {type: 'FeatureCollection', features: []} }); } else { map.addSource('sar-flood', { type: 'raster', tiles: [geospatialLayers.layers.sar_flood.tile_url], tileSize: 256 }); }
     if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addLayer({ id: 'sar-flood-fill', type: 'fill', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'fill-color': '#06b6d4', 'fill-opacity': 0.22 } }); } else { map.addLayer({ id: 'sar-flood-raster', type: 'raster', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'raster-opacity': 0.75 } }); }
     if (mode === 'demo' || geospatialLayers?.layers?.sar_flood?.status !== 'available') { map.addLayer({ id: 'sar-flood-border', type: 'line', source: 'sar-flood', layout: { visibility: activeLayers.sarFlood ? 'visible' : 'none' }, paint: { 'line-color': '#22d3ee', 'line-width': 1.5, 'line-dasharray': [4, 2] } }); }
 
-    // ──────── Forecast Cone of Uncertainty ────────
-    map.addSource('forecast-cone', { type: 'geojson', data: buildForecastCone(cyclone) });
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Forecast Cone of Uncertainty â”€â”€â”€â”€â”€â”€â”€â”€
+    map.addSource('forecast-cone', { type: 'geojson', data: mode === 'live' && forecastCone ? forecastCone : buildForecastCone(cyclone) });
+
+      // 🔴🔴🔴 Wind Hazard Buffers 🔴🔴🔴
+      map.addSource('wind-buffers', { type: 'geojson', data: mode === 'live' && windBuffers ? windBuffers : { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'wind-buffers-fill', type: 'fill', source: 'wind-buffers',
+        paint: { 'fill-color': ['match', ['get', 'wind_speed_kt'], 64, '#991b1b', 50, '#c2410c', 34, '#f59e0b', '#f59e0b'], 'fill-opacity': 0.2 }
+      }, 'cone-border');
+      map.addLayer({
+        id: 'wind-buffers-line', type: 'line', source: 'wind-buffers',
+        paint: { 'line-color': ['match', ['get', 'wind_speed_kt'], 64, '#991b1b', 50, '#c2410c', 34, '#f59e0b', '#f59e0b'], 'line-width': 1, 'line-opacity': 0.6 }
+      }, 'cone-border');
     map.addLayer({
       id: 'cone-fill', type: 'fill', source: 'forecast-cone',
       paint: { 'fill-color': '#ef4444', 'fill-opacity': 0.14 }
@@ -216,7 +229,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       paint: { 'line-color': '#ef4444', 'line-width': 1.5, 'line-dasharray': [6, 3], 'line-opacity': 0.6 }
     });
 
-    // ──────── Past Track Line ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Past Track Line â”€â”€â”€â”€â”€â”€â”€â”€
     const pastCoords = cyclone.past_track?.map(p => [p.lon, p.lat]) || [];
     map.addSource('past-track', {
       type: 'geojson',
@@ -228,7 +241,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       paint: { 'line-color': '#f59e0b', 'line-width': 3, 'line-opacity': 0.9 }
     });
 
-    // ──────── Past Track Points ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Past Track Points â”€â”€â”€â”€â”€â”€â”€â”€
     map.addSource('past-points', {
       type: 'geojson',
       data: {
@@ -250,7 +263,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       }
     });
 
-    // ──────── Forecast Track Line (dashed) ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Forecast Track Line (dashed) â”€â”€â”€â”€â”€â”€â”€â”€
     const fcastCoords = [
       [cyclone.current_position.lon, cyclone.current_position.lat],
       ...(cyclone.forecast_track?.map(p => [p.lon, p.lat]) || [])
@@ -265,7 +278,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       paint: { 'line-color': '#ef4444', 'line-width': 2.5, 'line-dasharray': [4, 3], 'line-opacity': 0.8 }
     });
 
-    // ──────── Forecast Points ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Forecast Points â”€â”€â”€â”€â”€â”€â”€â”€
     map.addSource('forecast-points', {
       type: 'geojson',
       data: {
@@ -287,7 +300,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       }
     });
 
-    // ──────── Shelter & Infrastructure Markers ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Shelter & Infrastructure Markers â”€â”€â”€â”€â”€â”€â”€â”€
     map.addSource('shelters', {
       type: 'geojson',
       data: {
@@ -330,7 +343,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       }
     });
 
-    // ──────── Interactive Popups ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Interactive Popups â”€â”€â”€â”€â”€â”€â”€â”€
     const popupConfig = [
       {
         layer: 'forecast-track-dots',
@@ -371,7 +384,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
     });
 
-    // ──────── Cyclone Eye — Clickable Dot ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Cyclone Eye â€” Clickable Dot â”€â”€â”€â”€â”€â”€â”€â”€
     const eyeEl = document.createElement('div');
     eyeEl.className = 'cyclone-eye-dot';
     eyeEl.innerHTML = [
@@ -401,7 +414,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
 
     eyeMarkerRef.current = marker;
 
-    // ──────── Cyclone Raster Overlay (Transparent + Spinning) ────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€ Cyclone Raster Overlay (Transparent + Spinning) â”€â”€â”€â”€â”€â”€â”€â”€
     // Toggle this to test different visual styles! Options: 'infrared' or 'true-color'
     const CYCLONE_STYLE = 'true-color'; 
     const spriteUrl = CYCLONE_STYLE === 'infrared' 
@@ -535,7 +548,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
   }, [mapReady, cyclone]);
 
 
-  /* ── 2b. Demo Mode: Live Track & Cone Updates ── */
+  /* â”€â”€ 2b. Demo Mode: Live Track & Cone Updates â”€â”€ */
   useEffect(() => {
     if (!mapReady || !mapRef.current || mode !== 'demo' || !cyclone) return;
     const map = mapRef.current;
@@ -599,7 +612,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
 
   }, [mapReady, cyclone, mode]);
 
-  /* ── 2c. Update Shelters Layer ── */
+  /* â”€â”€ 2c. Update Shelters Layer â”€â”€ */
   useEffect(() => {
     if (!mapReady || !mapRef.current || !shelters || shelters.length === 0) return;
     const map = mapRef.current;
@@ -617,14 +630,14 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
     }
   }, [mapReady, shelters]);
 
-  /* ── 3. Layer Visibility Toggle ── */
+  /* â”€â”€ 3. Layer Visibility Toggle â”€â”€ */
   useEffect(() => {
     if (!mapReady || !mapRef.current) return;
     const map = mapRef.current;
 
     const groups = {
       track: ['past-track-line', 'past-track-dots', 'forecast-track-line', 'forecast-track-dots'],
-      cone: ['cone-fill', 'cone-border'],
+      cone: ['cone-fill', 'cone-border', 'wind-buffers-fill', 'wind-buffers-line'],
       sarFlood: ['sar-flood-fill', 'sar-flood-border', 'sar-flood-raster'],
       gpmRain: ['gpm-rain-fill', 'gpm-rain-border', 'gpm-rain-raster'],
       shelters: ['shelter-circles', 'shelter-labels'],
@@ -643,7 +656,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
   const toggle = (key) => setActiveLayers(prev => ({ ...prev, [key]: !prev[key] }));
 
 
-  /* ── Render ── */
+  /* â”€â”€ Render â”€â”€ */
   return (
     <div className="relative w-full h-full bg-[#0b1120] rounded-xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col">
 
@@ -726,6 +739,11 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
     </div>
   );
 }
+
+
+
+
+
 
 
 

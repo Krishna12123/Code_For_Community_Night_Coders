@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Risk & Exposure Analytics Panel
  * Owner: Harshit
  *
@@ -18,6 +18,7 @@ const RISK_COLORS = {
 };
 
 export default function RiskPanel({ risk }) {
+  if (!risk) return <div className="bg-[#0b1120]/80 border border-gray-800 rounded-xl p-5 flex items-center justify-center text-gray-500 font-mono text-xs">Risk & Exposure Analytics Unavailable</div>;
   const districts = risk?.high_risk_districts || [];
 
   // Recharts data
@@ -36,7 +37,7 @@ export default function RiskPanel({ risk }) {
   return (
     <div className="flex flex-col space-y-4">
 
-      {/* ── KPI Stat Cards (2x2 grid) ── */}
+      {/* â”€â”€ KPI Stat Cards (2x2 grid) â”€â”€ */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
           label="Population at Risk"
@@ -75,7 +76,7 @@ export default function RiskPanel({ risk }) {
         />
       </div>
 
-      {/* ── District Risk Index Chart ── */}
+      {/* â”€â”€ District Risk Index Chart â”€â”€ */}
       {chartData.length > 0 && (
         <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center justify-between">
@@ -120,7 +121,7 @@ export default function RiskPanel({ risk }) {
         </div>
       )}
 
-      {/* ── District Threat Breakdown ── */}
+      {/* â”€â”€ District Threat Breakdown â”€â”€ */}
       <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3 flex items-center justify-between">
           <span>District Threat Breakdown</span>
@@ -174,7 +175,7 @@ export default function RiskPanel({ risk }) {
 }
 
 
-/* ── Reusable Stat Card ── */
+/* â”€â”€ Reusable Stat Card â”€â”€ */
 function StatCard({ label, value, sub, subColor, icon, subIcon, valueColor }) {
   return (
     <div className="bg-gray-900/80 border border-gray-800 p-3.5 rounded-xl">
@@ -194,3 +195,4 @@ function StatCard({ label, value, sub, subColor, icon, subIcon, valueColor }) {
     </div>
   );
 }
+

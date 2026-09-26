@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Gemini AI Briefing & Emergency Action SOP Feed
  * Owner: Harshit
  *
@@ -69,7 +69,7 @@ export default function ActionFeed({ risk, actions: initialActions, livePhase, a
   return (
     <div className="flex flex-col space-y-4">
 
-      {/* ── Post-Impact Damage Report (shown after POST_LANDFALL) ── */}
+      {/* â”€â”€ Post-Impact Damage Report (shown after POST_LANDFALL) â”€â”€ */}
       {livePhase === 'POST_LANDFALL' && (
         <div className="bg-gradient-to-br from-red-950/50 via-orange-950/30 to-gray-900 border border-red-500/40 rounded-xl p-4 shadow-xl animate-pulse-once">
           <div className="flex items-center space-x-2 text-red-400 font-bold text-xs uppercase tracking-wider mb-3">
@@ -101,7 +101,7 @@ export default function ActionFeed({ risk, actions: initialActions, livePhase, a
         </div>
       )}
 
-      {/* ── Gemini AI Situation Briefing ── */}
+      {/* â”€â”€ Gemini AI Situation Briefing â”€â”€ */}
       <div className="bg-gradient-to-br from-indigo-950/40 via-purple-950/20 to-gray-900 border border-purple-500/30 rounded-xl p-4 shadow-xl relative overflow-hidden">
         {/* Dynamic Phase Indicator */}
         <div className="absolute top-0 right-0 bg-purple-600/30 text-purple-200 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg border-b border-l border-purple-500/30">
@@ -156,7 +156,7 @@ export default function ActionFeed({ risk, actions: initialActions, livePhase, a
         )}
       </div>
 
-      {/* ── Emergency Action SOP Checklist ── */}
+      {/* â”€â”€ Emergency Action SOP Checklist â”€â”€ */}
       <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 flex-1">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
@@ -233,4 +233,5 @@ export default function ActionFeed({ risk, actions: initialActions, livePhase, a
     </div>
   );
 }
+
 
