@@ -10,6 +10,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Layers, Wind, CloudRain, Building2, Eye, Navigation } from 'lucide-react';
+import { build3DCyclone } from '../services/cyclone3D';
 
 mapboxgl.accessToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
 
@@ -104,13 +105,19 @@ function buildRainfallZone() {
    Map Dashboard Component
    ═══════════════════════════════════════════ */
 
-export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
+export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelters }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const eyeMarkerRef = useRef(null);
   const animFrameRef = useRef(null);
   const layersAddedRef = useRef(false);
+  const cycloneRef = useRef(cyclone); // Always holds latest cyclone prop
   const [mapReady, setMapReady] = useState(false);
+
+  // Keep cycloneRef in sync with latest prop
+  useEffect(() => {
+    cycloneRef.current = cyclone;
+  }, [cyclone]);
 
   const [activeLayers, setActiveLayers] = useState({
     track: true,
@@ -298,16 +305,16 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
       type: 'geojson',
       data: {
         type: 'FeatureCollection',
-        features: [
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [79.98, 14.44] },
-            properties: { name: 'Nellore Shelter #4', capacity: 1200 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.05, 15.35] },
-            properties: { name: 'Prakasam Shelter #12', capacity: 800 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.47, 15.90] },
-            properties: { name: 'Bapatla Relief Camp', capacity: 600 } },
-          { type: 'Feature', geometry: { type: 'Point', coordinates: [80.64, 15.50] },
-            properties: { name: 'Ongole District Hospital', capacity: 450 } },
-        ]
+        features: (shelters && shelters.length > 0 ? shelters : [
+          { name: 'Nellore Shelter #4', capacity: 1200, lat: 14.44, lon: 79.98 },
+          { name: 'Prakasam Shelter #12', capacity: 800, lat: 15.35, lon: 80.05 },
+          { name: 'Bapatla Relief Camp', capacity: 600, lat: 15.90, lon: 80.47 },
+          { name: 'Ongole District Hospital', capacity: 450, lat: 15.50, lon: 80.64 }
+        ]).map(s => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+          properties: { name: s.name, capacity: s.capacity }
+        }))
       }
     });
     map.addLayer({
@@ -493,46 +500,135 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
         if (!mapRef.current) return;
         
         const elapsed = now - START_TIME;
-        const angle = -(elapsed * ROTATE_SPEED) % (Math.PI * 2); // negative for clockwise/counter depending on hemisphere
+        const angle = -(elapsed * ROTATE_SPEED) % (Math.PI * 2);
         
-        const driftT = Math.min(elapsed / DRIFT_DUR, 1);
-        const ease = 1 - Math.pow(1 - driftT, 3);
-        const curLng = startLng + ease * (nextLng - startLng);
-        const curLat = startLat + ease * (nextLat - startLat);
-        
-        const coords = getRotatedCoordinates(curLng, curLat, angle);
-        const source = map.getSource('cyclone-overlay');
-        if (source) {
-          source.setCoordinates(coords);
-        }
-        
-        // Also move the tiny popup dot
-        if (eyeMarkerRef.current) {
-          eyeMarkerRef.current.setLngLat([curLng, curLat]);
-        }
-        
-        // Emit dynamic phase based on animation progress (simulating distance to coast)
-        if (onPhaseChange) {
-           let currentPhase = 'PRE_LANDFALL';
-           if (driftT > 0.6 && driftT < 0.8) currentPhase = 'LANDFALL';
-           else if (driftT >= 0.8) currentPhase = 'POST_LANDFALL';
-           
-           if (currentPhase !== lastPhase) {
-             lastPhase = currentPhase;
-             onPhaseChange(currentPhase);
-           }
+        if (mode === 'demo') {
+          // In demo mode: rotate at the LATEST position from cycloneRef
+          const c = cycloneRef.current;
+          if (!c?.current_position) return;
+          const cLng = c.current_position.lon;
+          const cLat = c.current_position.lat;
+          
+          const coords = getRotatedCoordinates(cLng, cLat, angle);
+          const source = map.getSource('cyclone-overlay');
+          if (source) source.setCoordinates(coords);
+          if (eyeMarkerRef.current) eyeMarkerRef.current.setLngLat([cLng, cLat]);
+        } else {
+          // In live mode: drift toward next forecast point
+          const driftT = Math.min(elapsed / DRIFT_DUR, 1);
+          const ease = 1 - Math.pow(1 - driftT, 3);
+          const curLng = startLng + ease * (nextLng - startLng);
+          const curLat = startLat + ease * (nextLat - startLat);
+          
+          const coords = getRotatedCoordinates(curLng, curLat, angle);
+          const source = map.getSource('cyclone-overlay');
+          if (source) source.setCoordinates(coords);
+          if (eyeMarkerRef.current) eyeMarkerRef.current.setLngLat([curLng, curLat]);
+          
+          // Emit dynamic phase
+          if (onPhaseChange) {
+            let currentPhase = 'PRE_LANDFALL';
+            if (driftT > 0.6 && driftT < 0.8) currentPhase = 'LANDFALL';
+            else if (driftT >= 0.8) currentPhase = 'POST_LANDFALL';
+            
+            if (currentPhase !== lastPhase) {
+              lastPhase = currentPhase;
+              onPhaseChange(currentPhase);
+            }
+          }
+          
+          if (driftT >= 1) return; // Stop after drift completes
         }
 
-        if (driftT < 1) {
-          animFrameRef.current = requestAnimationFrame(animateRaster);
-        }
+        animFrameRef.current = requestAnimationFrame(animateRaster);
       }
       
       animFrameRef.current = requestAnimationFrame(animateRaster);
     });
-
   }, [mapReady, cyclone]);
 
+
+  /* ── 2b. Demo Mode: Live Track & Cone Updates ── */
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || mode !== 'demo' || !cyclone) return;
+    const map = mapRef.current;
+
+    // Update past track line
+    const pastSrc = map.getSource('past-track');
+    if (pastSrc && cyclone.past_track?.length) {
+      pastSrc.setData({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: cyclone.past_track.map(p => [p.lon, p.lat])
+        }
+      });
+    }
+
+    // Update past track dots
+    const pastDotsSrc = map.getSource('past-points');
+    if (pastDotsSrc && cyclone.past_track?.length) {
+      pastDotsSrc.setData({
+        type: 'FeatureCollection',
+        features: cyclone.past_track.map(p => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+          properties: { wind: p.wind_kmh, time: p.timestamp }
+        }))
+      });
+    }
+
+    // Update forecast track line
+    const fcSrc = map.getSource('forecast-track');
+    if (fcSrc && cyclone.forecast_track?.length) {
+      const coords = [
+        [cyclone.current_position.lon, cyclone.current_position.lat],
+        ...cyclone.forecast_track.map(p => [p.lon, p.lat])
+      ];
+      fcSrc.setData({
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: coords }
+      });
+    }
+
+    // Update forecast dots
+    const fcDotsSrc = map.getSource('forecast-points');
+    if (fcDotsSrc && cyclone.forecast_track?.length) {
+      fcDotsSrc.setData({
+        type: 'FeatureCollection',
+        features: cyclone.forecast_track.map(p => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+          properties: { wind: p.wind_kmh, time: p.timestamp }
+        }))
+      });
+    }
+
+    // Update cone of uncertainty
+    const coneSrc = map.getSource('forecast-cone');
+    if (coneSrc) {
+      coneSrc.setData(buildForecastCone(cyclone));
+    }
+
+  }, [mapReady, cyclone, mode]);
+
+  /* ── 2c. Update Shelters Layer ── */
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !shelters || shelters.length === 0) return;
+    const map = mapRef.current;
+    
+    const shelterSrc = map.getSource('shelters');
+    if (shelterSrc) {
+      shelterSrc.setData({
+        type: 'FeatureCollection',
+        features: shelters.map(s => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+          properties: { name: s.name, capacity: s.capacity }
+        }))
+      });
+    }
+  }, [mapReady, shelters]);
 
   /* ── 3. Layer Visibility Toggle ── */
   useEffect(() => {
