@@ -9,9 +9,11 @@
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Layers, Wind, CloudRain, Building2, Eye, Navigation } from 'lucide-react';
+import { Layers, Wind, CloudRain, Building2, Eye, Navigation, Compass, Waves, X, Loader2 } from 'lucide-react';
+import { fetchMarineWeather } from '../services/api';
 
 mapboxgl.accessToken = import.meta.env?.VITE_MAPBOX_TOKEN || '';
+
 
 
 /* ═══════════════════════════════════════════
@@ -111,6 +113,8 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
   const animFrameRef = useRef(null);
   const layersAddedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
+  const [marineWeather, setMarineWeather] = useState(null);
+  const [isLoadingMarine, setIsLoadingMarine] = useState(false);
 
   const [activeLayers, setActiveLayers] = useState({
     track: true,
@@ -165,18 +169,52 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
         maxzoom: 14
       });
       map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+      map.resize();
       setMapReady(true);
+    });
+
+    // Immediate and delayed resize triggers to ensure full WebGL canvas synchronization
+    const initialResizeTimer = setTimeout(() => {
+      if (mapRef.current) mapRef.current.resize();
+    }, 150);
+
+    // ResizeObserver watches container element for any grid or flexbox dimension changes
+    let resizeObserver = null;
+    if (window.ResizeObserver && containerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapRef.current) {
+          mapRef.current.resize();
+        }
+      });
+      resizeObserver.observe(containerRef.current);
+    }
+
+    // Map click handler to probe live Indian Ocean marine weather
+    map.on('click', async (e) => {
+      const { lng, lat } = e.lngLat;
+      setIsLoadingMarine(true);
+      try {
+        const data = await fetchMarineWeather(lat, lng);
+        setMarineWeather(data);
+      } catch (err) {
+        console.warn('Failed to load marine weather:', err);
+      } finally {
+        setIsLoadingMarine(false);
+      }
     });
 
     mapRef.current = map;
 
     return () => {
+      clearTimeout(initialResizeTimer);
+      if (resizeObserver) resizeObserver.disconnect();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
       if (eyeMarkerRef.current) eyeMarkerRef.current.remove();
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
 
 
   /* ── 2. Add GeoJSON Data Layers ── */
@@ -565,7 +603,8 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
     <div className="relative w-full h-full bg-[#0b1120] rounded-xl overflow-hidden border border-gray-800 shadow-2xl flex flex-col">
 
       {/* Mapbox GL Canvas */}
-      <div ref={containerRef} className="flex-1" />
+      <div ref={containerRef} className="flex-1 w-full h-full min-h-0 relative" />
+
 
       {/* Coordinate & Mode HUD */}
       <div className="absolute bottom-[72px] left-4 bg-gray-950/90 border border-gray-800 px-3 py-1.5 rounded-lg text-xs font-mono text-gray-400 flex items-center space-x-3 z-10 backdrop-blur-sm">
@@ -575,9 +614,60 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange }) {
           {cyclone?.current_position?.lon?.toFixed(2) || '82.10'}&deg;E
         </span>
         <span className="text-gray-700">|</span>
-        <Navigation className="w-3.5 h-3.5 text-purple-400" />
-        <span>3D Globe + Terrain</span>
+        <span className="text-[10px] text-sky-400/80">Click ocean for live wind</span>
       </div>
+
+      {/* Live Ocean Marine Weather Probe Card */}
+      {marineWeather && (
+        <div className="absolute top-4 left-4 bg-gray-950/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl z-20 backdrop-blur-md max-w-xs transition-all duration-300">
+          <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-gray-800">
+            <div className="flex items-center space-x-1.5 text-sky-400 font-bold text-xs">
+              <Waves className="w-4 h-4" />
+              <span>Indian Ocean Live Telemetry</span>
+            </div>
+            <button
+              onClick={() => setMarineWeather(null)}
+              className="text-gray-400 hover:text-white p-0.5 rounded transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="space-y-1 text-xs">
+            <div className="flex items-center justify-between text-gray-300">
+              <span className="text-gray-500 text-[11px]">Location:</span>
+              <span className="font-mono font-bold text-white text-[11px]">{marineWeather.lat}&deg;N, {marineWeather.lon}&deg;E</span>
+            </div>
+            <div className="flex items-center justify-between text-gray-300">
+              <span className="text-gray-500 text-[11px] flex items-center space-x-1">
+                <Wind className="w-3 h-3 text-sky-400" />
+                <span>Ocean Wind:</span>
+              </span>
+              <span className="font-mono font-bold text-sky-300 text-[11px]">
+                {marineWeather.wind_speed_kmh} km/h <span className="text-[10px] text-gray-400">({marineWeather.wind_speed_kt} kt)</span>
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-gray-300">
+              <span className="text-gray-500 text-[11px] flex items-center space-x-1">
+                <Compass className="w-3 h-3 text-amber-400" />
+                <span>Direction:</span>
+              </span>
+              <span className="font-mono font-bold text-amber-300 text-[11px]">
+                {marineWeather.wind_direction_cardinal} ({marineWeather.wind_direction_deg}&deg;)
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-gray-300">
+              <span className="text-gray-500 text-[11px]">Surface Pressure:</span>
+              <span className="font-mono font-bold text-emerald-300 text-[11px]">{marineWeather.surface_pressure_hpa} hPa</span>
+            </div>
+            <div className="pt-1 text-[9px] text-gray-500 flex items-center justify-between border-t border-gray-900 mt-1">
+              <span>{marineWeather.source || 'Open-Meteo API'}</span>
+              <span className="text-emerald-400 font-mono font-bold">● LIVE</span>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Layer Control Bar */}
       <div className="h-14 bg-gray-950 border-t border-gray-800 px-4 flex items-center justify-between text-xs z-10">

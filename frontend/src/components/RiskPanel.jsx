@@ -53,11 +53,12 @@ export default function RiskPanel({ risk }) {
         />
         <StatCard
           label="SAR Flood Inundation"
-          value={`${totalFlooded.toFixed(1)} km\u00B2`}
+          value={`${totalFlooded.toFixed(1)} km²`}
           sub={`Across ${districts.length || 4} Coastal Districts`}
           icon={<Droplets className="w-4 h-4 text-cyan-400" />}
           valueColor="text-cyan-300"
         />
+
         <StatCard
           label="Hospitals at Risk"
           value={totalHospitals}
@@ -158,8 +159,9 @@ export default function RiskPanel({ risk }) {
               <div className="flex items-center justify-between text-[11px] text-gray-400">
                 <span className="flex items-center space-x-1">
                   <Droplets className="w-3 h-3 text-cyan-400" />
-                  <span>Flooded: {district.flooded_area_sq_km} km\u00B2</span>
+                  <span>Flooded: {district.flooded_area_sq_km} km²</span>
                 </span>
+
                 <span className="flex items-center space-x-1">
                   <Cross className="w-3 h-3 text-red-400" />
                   <span>{district.vulnerable_hospitals} Hospitals at Risk</span>

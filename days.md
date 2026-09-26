@@ -130,27 +130,28 @@ A day-by-day, person-by-person breakdown for delivering the **Cyclone Risk Asses
 ---
 
 ### 🧑‍💻 Krishna (FastAPI Backend & Integration)
-- [ ] **Task 3.1 (Real-Time Alerts & WebSocket)**:
-  - Implement WebSocket channel (`/api/v1/ws/alerts`) for instant emergency bulletin broadcasts.
-- [ ] **Task 3.2 (Action Status Updates & Report Generation)**:
-  - Endpoints to update SOP task status (`Pending` $\rightarrow$ `In-Progress` $\rightarrow$ `Completed`).
-  - Generate downloadable PDF / JSON Disaster Situation Report.
-- [ ] **Task 3.3 (API Hardening & Edge Cases)**:
-  - Handle rate limits, fallback mock data in case of offline/network issues, CORS verification.
-- [ ] **Deliverable Day 3**: Production-grade backend with real-time alert broadcasting, task state updates, and export capabilities.
+- [x] **Task 3.1 (Real-Time Alerts & WebSocket)**:
+  - Implement WebSocket channel (`/api/v1/ws/alerts`) and broadcast endpoint for instant emergency bulletin broadcasts.
+- [x] **Task 3.2 (Action Status Updates & Report Generation)**:
+  - Endpoints to update SOP task status (`Pending` $\rightarrow$ `In-Progress` $\rightarrow$ `Completed`) with DB persistence.
+  - Generate downloadable PDF / JSON Disaster Situation Report (`/api/v1/reports/situation-report/pdf/{cyclone_id}`).
+- [x] **Task 3.3 (API Hardening & Edge Cases)**:
+  - Handle rate limits, fallback mock data in case of offline/network issues, CORS verification, and Day 3 test suite.
+- [x] **Deliverable Day 3**: Production-grade backend with real-time alert broadcasting, task state updates, and export capabilities.
 
 ---
 
 ### 🧑‍💻 Harshit (React Frontend & Dashboard Polish)
-- [ ] **Task 3.1 (Interactive Action & Triage Center)**:
+- [x] **Task 3.1 (Interactive Action & Triage Center)**:
   - Grouped action item checklist (*Pre-Landfall Evacuation*, *Infrastructure Securing*, *Post-Landfall Rescue*).
-  - Interactive status toggles and assigned agency badges (NDRF, Health Dept, Coast Guard).
-- [ ] **Task 3.2 (Gemini AI Situation Briefing Panel)**:
+  - Interactive status toggles and assigned agency badges (NDRF, Health Dept, Coast Guard) wired to backend API.
+- [x] **Task 3.2 (Gemini AI Situation Briefing Panel)**:
   - Formatted AI advisory card with severity highlighting.
-  - "Download Official Advisory Report (PDF)" button.
-- [ ] **Task 3.3 (UI Polish, Dark Mode & Responsive Layout)**:
-  - Polished dark command-center aesthetic, smooth loading skeletons, toast notifications for incoming WebSocket alerts.
-- [ ] **Deliverable Day 3**: Complete, visually stunning Command Center Dashboard ready for live demonstration.
+  - "Download Official Advisory Report (PDF)" button connected to ReportEngine.
+- [x] **Task 3.3 (UI Polish, Dark Mode & Responsive Layout)**:
+  - Polished dark command-center aesthetic, smooth loading skeletons, live emergency alert toast banner for incoming WebSocket alerts.
+- [x] **Deliverable Day 3**: Complete, visually stunning Command Center Dashboard ready for live demonstration.
+
 
 ---
 
