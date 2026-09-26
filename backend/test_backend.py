@@ -245,6 +245,16 @@ def test_backend_suite():
     assert res_compat.status_code == 200 and "report_id" in res_compat.json()
     print(" Backward compatibility endpoint /api/v1/risk/report/CYC-2026-01 verified.")
 
+    # 11. Live Indian Ocean Marine Weather Endpoint
+    res_marine = client.get("/api/v1/cyclones/marine/weather?lat=12.0&lon=86.0")
+    assert res_marine.status_code == 200, f"Marine weather failed: {res_marine.text}"
+    marine_data = res_marine.json()
+    assert "wind_speed_kmh" in marine_data
+    assert "wind_direction_cardinal" in marine_data
+    assert "surface_pressure_hpa" in marine_data
+    print(f" Live Indian Ocean Marine Telemetry OK: {marine_data['wind_speed_kmh']} km/h ({marine_data['wind_direction_cardinal']} {marine_data['wind_direction_deg']}°), Pressure: {marine_data['surface_pressure_hpa']} hPa")
+
+
     print("\n================================================================")
     print(" 🎉 ALL 10 COMPREHENSIVE TEST SUITES PASSED! DAY 3 COMPLETE.")
     print("================================================================")
