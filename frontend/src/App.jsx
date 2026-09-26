@@ -6,7 +6,9 @@ import ActionFeed from './components/ActionFeed';
 import ToastContainer from './components/ToastContainer';
 import LoadingSkeleton from './components/LoadingSkeleton';
 import { 
-  fetchActiveCyclone, 
+  fetchActiveCyclone,
+  fetchForecastCone,
+  fetchWindBuffers, 
   fetchRiskExposure, 
   fetchActionRecommendations, 
   fetchAIBriefing,
@@ -20,7 +22,7 @@ import { getDemoState } from './services/demoData';
 //  'demo'  → Cyclone Fani replay (24h compressed to 24 min)
 //  'live'  → Real-time data from Vikash's backend
 // ═══════════════════════════════════════════
-const INITIAL_MODE = 'demo'; // Change to 'live' when backend is ready
+const INITIAL_MODE = 'live'; // Change to 'live' when backend is ready
 
 export default function App() {
   const [mode, setMode] = useState(INITIAL_MODE);
@@ -30,6 +32,8 @@ export default function App() {
   const [shelters, setShelters] = useState([]);
   const [aiBriefing, setAiBriefing] = useState(null);
   const [geospatialLayers, setGeospatialLayers] = useState(null);
+  const [forecastCone, setForecastCone] = useState(null);
+  const [windBuffers, setWindBuffers] = useState(null);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [livePhase, setLivePhase] = useState('PRE_LANDFALL');
@@ -127,16 +131,20 @@ export default function App() {
       try {
         const storm = await fetchActiveCyclone();
         setCyclone(storm);
-        const [riskData, actionsData, briefing, layersData] = await Promise.all([
-          fetchRiskExposure(storm.cyclone_id),
-          fetchActionRecommendations(storm.cyclone_id),
+        const [riskData, actionsData, briefing, layersData, coneData, buffersData] = await Promise.all([
+          fetchRiskExposure(storm.cyclone_id).catch(() => null),
+          fetchActionRecommendations(storm.cyclone_id).catch(() => []),
           fetchAIBriefing(storm.cyclone_id),
-          fetchGeospatialLayers(storm.cyclone_id).catch(() => null)
+          fetchGeospatialLayers(storm.cyclone_id).catch(() => null),
+          fetchForecastCone(storm.cyclone_id).catch(() => null),
+          fetchWindBuffers(storm.cyclone_id).catch(() => null)
         ]);
         setRisk(riskData);
         setActions(actionsData);
         setAiBriefing(briefing);
         setGeospatialLayers(layersData);
+        setForecastCone(coneData);
+        setWindBuffers(buffersData);
       } catch (e) {
         console.error('Failed to load live data:', e);
       } finally {
@@ -225,7 +233,7 @@ export default function App() {
         {mode === 'live' && (
           <span className="text-[10px] text-emerald-400/60 font-mono flex items-center space-x-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Connected to Vikash&apos;s pipeline</span>
+            <span>LIVE ANALYSIS PIPELINE</span>
           </span>
         )}
       </div>
@@ -241,6 +249,8 @@ export default function App() {
             mode={mode}
             shelters={shelters}
             geospatialLayers={geospatialLayers}
+            forecastCone={forecastCone}
+            windBuffers={windBuffers}
           />
         </div>
 
