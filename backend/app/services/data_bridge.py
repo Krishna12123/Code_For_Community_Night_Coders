@@ -4,6 +4,7 @@ Owner: Krishna (Bridging Vikash's geospatial_ai modules into FastAPI backend)
 """
 
 import sys
+from app.core.config import settings
 import os
 import time
 from typing import Dict, Any, Optional
@@ -43,10 +44,10 @@ class DataBridge:
 
     def __init__(self):
         self.tracker = CycloneTracker() if GEOSPATIAL_AI_AVAILABLE else None
-        self.gee = GEEPipeline() if GEOSPATIAL_AI_AVAILABLE else None
+        self.gee = GEEPipeline(project_id=settings.GEE_PROJECT_ID) if GEOSPATIAL_AI_AVAILABLE else None
         if self.gee:
             self.gee.initialize_gee()
-        self.advisor = GeminiDisasterAdvisor() if GEOSPATIAL_AI_AVAILABLE else None
+        self.advisor = GeminiDisasterAdvisor(model_name=settings.GEMINI_MODEL) if GEOSPATIAL_AI_AVAILABLE else None
 
         # Simple in-memory cache
         self._cache: Dict[str, Any] = {}
@@ -118,7 +119,7 @@ class DataBridge:
         now = datetime.now(timezone.utc)
         fallback_data = BackendCycloneData(
             cyclone_id=cyclone_id,
-            name="Cyclone Vardah-II",
+            name="Synthetic Cyclone Scenario",
             category=3,
             max_sustained_wind_kmh=165.0,
             central_pressure_mb=960.0,
@@ -140,7 +141,7 @@ class DataBridge:
                 TrackPoint(timestamp=(now).isoformat(), lat=16.1, lon=79.8, wind_kmh=150.0, uncertainty_radius_km=70.0),
                 TrackPoint(timestamp=(now).isoformat(), lat=16.7, lon=79.1, wind_kmh=95.0, uncertainty_radius_km=90.0)
             ],
-            metadata={"source": "Backend Calibrated Fixture"}
+            metadata={"source": "synthetic_fixture"}
         )
         return fallback_data
 
@@ -259,7 +260,7 @@ class DataBridge:
         result = AIBriefingResponse(
             cyclone_id=cyclone_id,
             executive_summary=(
-                "Severe Cyclonic Storm 'Cyclone Vardah-II' packing sustained winds of 165 km/h "
+                "Severe Cyclonic Storm 'Synthetic Cyclone Scenario' packing sustained winds of 165 km/h "
                 "with central pressure 960 mb. Landfall expected within 18 hours along south Andhra Pradesh coast. "
                 "Immediate high alert and mandatory coastal evacuation advised."
             ),
@@ -307,3 +308,4 @@ class DataBridge:
 
 
 data_bridge = DataBridge()
+

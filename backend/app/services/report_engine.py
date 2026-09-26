@@ -156,7 +156,7 @@ class SituationReportEngine:
         }
         threat_bg = threat_color_map.get(risk_assessment.threat_level, "#dc2626")
 
-        storm_name = storm_data.name if storm_data else "Cyclone Vardah-II"
+        storm_name = storm_data.name if storm_data else "Synthetic Cyclone Scenario"
         storm_cat = f"Category {storm_data.category}" if storm_data else "Category 3"
         max_wind = f"{int(storm_data.max_sustained_wind_kmh)} km/h" if storm_data else "165 km/h"
         central_press = f"{storm_data.central_pressure_mb or 960} mb" if storm_data else "960 mb"
@@ -346,7 +346,7 @@ class SituationReportEngine:
             "cyclone_id": cyclone_id,
             "storm_telemetry": storm_data.model_dump() if storm_data else {
                 "cyclone_id": cyclone_id,
-                "name": "Cyclone Vardah-II",
+                "name": "Synthetic Cyclone Scenario",
                 "category": 3,
                 "max_sustained_wind_kmh": 165.0,
                 "central_pressure_mb": 960.0
