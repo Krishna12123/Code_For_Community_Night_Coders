@@ -75,8 +75,8 @@ function buildFloodZone() {
     geometry: {
       type: 'Polygon',
       coordinates: [[
-        [80.10, 14.10], [80.75, 14.25], [80.95, 14.80],
-        [80.60, 15.40], [80.05, 15.20], [79.85, 14.55], [80.10, 14.10]
+        [79.80, 15.30], [80.45, 15.45], [80.65, 16.00],
+        [80.30, 16.60], [79.75, 16.40], [79.55, 15.75], [79.80, 15.30]
       ]]
     }
   };
@@ -92,8 +92,8 @@ function buildRainfallZone() {
     geometry: {
       type: 'Polygon',
       coordinates: [[
-        [79.5, 13.5], [82.5, 13.5], [83.0, 15.0],
-        [82.0, 16.5], [79.5, 16.0], [79.0, 14.5], [79.5, 13.5]
+        [79.0, 15.0], [82.0, 15.0], [82.5, 16.5],
+        [81.5, 18.0], [79.0, 17.5], [78.5, 16.0], [79.0, 15.0]
       ]]
     }
   };
@@ -293,7 +293,7 @@ export default function MapDashboard({ cyclone, risk, onPhaseChange, mode, shelt
       data: {
         type: 'FeatureCollection',
         features: (shelters && shelters.length > 0 ? shelters : [
-          { name: 'Nellore Shelter #4', capacity: 1200, lat: 14.44, lon: 79.98 },
+          { name: 'Krishna Shelter #4', capacity: 1200, lat: 16.20, lon: 79.50 },
           { name: 'Prakasam Shelter #12', capacity: 800, lat: 15.35, lon: 80.05 },
           { name: 'Bapatla Relief Camp', capacity: 600, lat: 15.90, lon: 80.47 },
           { name: 'Ongole District Hospital', capacity: 450, lat: 15.50, lon: 80.64 }
